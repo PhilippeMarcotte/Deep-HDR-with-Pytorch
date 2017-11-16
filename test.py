@@ -1,22 +1,80 @@
-import torch
 from torch.autograd import Variable
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torch
 
-tensor = torch.FloatTensor([[1,2], [3,4]])
-variable = Variable(tensor, requires_grad = True)
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.linear = nn.Linear(3,2)
+    
+    def forward(self, x):
+        return self.linear(x)
 
-print(tensor)
-print(variable)
+net = Net()
 
-t_out = torch.mean(tensor * tensor)
-v_out = torch.mean(variable * variable)
+criterion = nn.MSELoss()
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-print(t_out)
-print(v_out)
+x = Variable(torch.cuda.randn(5, 3))
+y = Variable(torch.cuda.randn(5, 2))
 
-v2_out = torch.mean(v_out * variable)
+net = net.cuda()
 
-v2_out.backward(retain_graph = True)
+for epoch in range(50):
+    optimizer.zero_grad()
 
-v_out.backward()
+    outputs = net(x)
 
-print(variable.grad)
+    loss= criterion(outputs, y)
+    loss.backward()
+    optimizer.step()
+
+    print(loss.data[0])
+    
+
+
+'''
+# Create tensors.
+x = Variable(torch.randn(5, 3).cuda())
+y = Variable(torch.randn(5, 2).cuda())
+
+# Build a linear layer.
+linear = nn.Linear(3, 2)
+print ('w: ', linear.weight)
+print ('b: ', linear.bias)
+
+# Build Loss and Optimizer.
+criterion = nn.MSELoss()
+optimizer = torch.optim.SGD(linear.parameters(), lr=0.01)
+
+# Forward propagation.
+pred = linear(x)
+
+# Compute loss.
+loss = criterion(pred, y)
+print('loss: ', loss.data[0])
+
+# Backpropagation.
+loss.backward()
+
+# Print out the gradients.
+print ('dL/dw: ', linear.weight.grad) 
+print ('dL/db: ', linear.bias.grad)
+
+# 1-step Optimization (gradient descent).
+optimizer.step()
+
+# You can also do optimization at the low level as shown below.
+# linear.weight.data.sub_(0.01 * linear.weight.grad.data)
+# linear.bias.data.sub_(0.01 * linear.bias.grad.data)
+
+# Print out the loss after optimization.
+while True:
+    pred = linear(x)
+    loss = criterion(pred, y)
+    print('loss after 1 step optimization: ', loss.data[0])
+    loss.backward()
+    optimizer.step()
+'''
