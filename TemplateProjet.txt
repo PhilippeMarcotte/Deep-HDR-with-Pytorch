@@ -38,7 +38,7 @@ Methodes :
 
 	Classe PatchGenerator() :
 		GetPatches(img)	
-		isUnderOrOverExposed(patch)
+		isUnderOrOverExposed(patches)
 
 Ordre :
 	Preprocessor preprocessor = new Preprocessor(<folder avec images>);
