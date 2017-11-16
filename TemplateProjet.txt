@@ -6,13 +6,11 @@ Classes :
 	(qui appelerait les methodes apres que preprocessor ait fait ses affaires) (remplacerait la classe Image, je sais pas lequel serait le mieux)
 
 Methodes :
-	Classe DataAugmenter :
-		AugmentData() (ou AugmentImage() pour chaque image?)
-		RotateImage()
-		FlipImage()
-		SwapColorsImage()
+	Package DataAugmenter :
+		AugmentData()
+		Apply_Random_Transformation(img)
 
-	Classe Preprocessor :
+	Package Preprocessor :
 		ReadExpoTimes()
 		ReadImages()
 		Demosaic()
@@ -20,25 +18,27 @@ Methodes :
 		ResizeImage()
 		WriteImages()
 
-	Classe Utility :
+	Package ImageUtilities :
 		CropImage()
 		ReadImage()
 		ReadExpoTime()
 		LDRToHDR()
 		HDRToLDR()
 		LDRToLDR()
+		isUnderOrOverExposed(img)
+		extract_from_image(img)
+		RotateImage()
+		FlipImage()
+		SwapColorsImage()
 
-	Classe OpticalFlow (ou Collection d'images) :
+	Package OpticalFlow (ou Collection d'images) :
 		Operations sur les images du genres ComputeOpticalFlow(), etc.
 		ComputeOpticalFlow(img)
 		AdjustExposure(img1, img2)	
 		ComputeCeliu(img)
 		WarpUsingFlow(img1, img2)
 		isPixelNaN(img)
-
-	Classe PatchGenerator() :
-		GetPatches(img)	
-		isUnderOrOverExposed(patches)
+			
 
 Ordre :
 	Preprocessor preprocessor = new Preprocessor(<folder avec images>);
