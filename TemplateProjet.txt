@@ -1,0 +1,56 @@
+Classes :
+	DataAugmenter
+	Preprocessor
+	Utiliy
+	(Possiblement) HDRMaker
+	(qui appelerait les methodes apres que preprocessor ait fait ses affaires) (remplacerait la classe Image, je sais pas lequel serait le mieux)
+
+Methodes :
+	Classe DataAugmenter :
+		AugmentData() (ou AugmentImage() pour chaque image?)
+		RotateImage()
+		FlipImage()
+		SwapColorsImage()
+
+	Classe Preprocessor :
+		ReadExpoTimes()
+		ReadImages()
+		Demosaic()
+		ApplyGammaCorrection()
+		ResizeImage()
+		WriteImages()
+
+	Classe Utility :
+		CropImage()
+		ReadImage()
+		ReadExpoTime()
+		LDRToHDR()
+		HDRToLDR()
+		LDRToLDR()
+
+	Classe OpticalFlow (ou Collection d'images) :
+		Operations sur les images du genres ComputeOpticalFlow(), etc.
+		ComputeOpticalFlow(img)
+		AdjustExposure(img1, img2)	
+		ComputeCeliu(img)
+		WarpUsingFlow(img1, img2)
+		isPixelNaN(img)
+
+	Classe PatchGenerator() :
+		GetPatches(img)	
+		isUnderOrOverExposed(patch)
+
+Ordre :
+	Preprocessor preprocessor = new Preprocessor(<folder avec images>);
+	preprocessor.ReadImages();
+	preprocessor.Demosaic();
+	preprocessor.ApplyGammaCorrection()
+	preprocessor.ResizeImages();
+	preprocessor.WriteImages();
+
+	imgs = ReadImages();
+	imgs.AdjustExposure();
+	imgs.ComputeOpticalFlow();
+	imgs.ComputeCeliu();
+	imgs.WarpUsingFlow();
+	imgs.isPixelNaN();
