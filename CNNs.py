@@ -1,10 +1,11 @@
 import torch.nn as nn
-from ImageUtilities import extract_patches_from_image
+from ImageUtilities import weighted_average
+from ImageUtilities import LDR_to_HDR
 import numpy as np
 from torch.autograd import Variable
 import torch
 
-class DeepHDRCNN(nn.Module):
+class DeepHDRModel(nn.Module):
     def __init__(self, out_channels = 3, use_xavier_init_uniformally = True):
         super(DeepHDRCNN, self).__init__()
         self.layers = []
@@ -48,7 +49,9 @@ class DeepHDRCNN(nn.Module):
         
         self.optimzer = torch.optim.Adam(self.parameters(), 0.0001)
 
-    def compute_HDR_image(self, x):
+        self.gamma = 2.2
+
+    def other_forward_steps(self, x):
         return x
 
     def forward(self, x):
@@ -56,46 +59,64 @@ class DeepHDRCNN(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        hdr_img = self.compute_HDR_image(out)
+        hdr_img = self.other_forward_steps(out)
         return hdr_img#tone_map(hdr_img)
 
     def loss(self, result, target):
         assert result.size() == target.size()
-        diff = result.sub(target)
-        sqr_diff = diff ** 2
-        return sqr_diff.sum(1)
+        return torch.sum((input - target) ** 2, dim=1)
 
-    def train(self, data, label):
+    def train(self, images, expos, labels):
+        self.images = images
         print("HEYO")
-        
 
-
-class DirectDeepHDR(DeepHDRCNN):
+class DirectDeepHDR(DeepHDRModel):
     def __init__(self):
         super(DirectDeepHDR, self).__init__(3)
 
-class WeDeepHDR(DeepHDRCNN):
+class WeDeepHDR(DeepHDRModel):
     def __init__(self):
         super(WeDeepHDR, self).__init__(9)
     
-    def compute_HDR_image(self, x):
-        # return HDR image from weighted mean
-        w1 = x[:,0:2,:,:]
-        w2 = x[:,3:5,:,:]
-        w3 = x[:,6:8,:,:]
-        raise NotImplementedError("")        
+    def other_forward_steps(self, weights):
+        return weighted_average(weights, self.images[:, 9:18], 3)
 
-class WieDeepHDR(DeepHDRCNN):
+class WieDeepHDR(DeepHDRModel):
     def __init__(self):
-        super(WieDeepHDR, self).__init__(18)
+        super(WieDeepHDR, self).__init__(9)
 
-    def compute_HDR_image(self, x):
-        # compute refined aligned HDR images
-        # return HDR image from weighted mean        
+    def other_forward_steps(self, x, ):
+        
+        # return HDR image from weighted mean
         raise NotImplementedError("")
 
-patch = Variable(torch.ones(1,18,40,40))
+    def refined_LDR_images(self, x):
+        x = x.clamp(0,1)
+        low_expo_HDR = LDR_to_HDR(x[:, 0:3])
+        med_expo_HDR = LDR_to_HDR(x[:, 3:6])
+        hig_expo_HDR = LDR_to_HDR(x[:, 6:9])
 
+        HDR_imgages = [low_expo_HDR, med_expo_HDR, hig_expo_HDR]
+        return torch.cat(HDR_imgages, 1)
+
+patch = Variable(torch.arange(0,9*40*40).view(1,9,40,40))
+
+#print(patch[0,0:3,:,:])
+
+zeros = Variable(torch.zeros(1,3,40,40))
+ones  = Variable(torch.ones(1,3,40,40))
+twos = Variable(2 * torch.ones(1,3,40,40))
+
+mats = [zeros, ones, twos]
+
+mat1 = torch.cat(mats, 1)
+mat2 = torch.cat(mats, 1)
+
+sum_mat = mat1 + mat2
+
+print(sum_mat.size())
+print((ones.matmul(ones) / twos)[0,0])
+'''
 patch = patch.cuda()
 
 cnn = DirectDeepHDR()
@@ -103,3 +124,4 @@ cnn = DirectDeepHDR()
 cnn = cnn.cuda()
 
 output = cnn(patch)
+'''
