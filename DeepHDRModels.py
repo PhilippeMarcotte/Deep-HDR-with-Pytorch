@@ -6,7 +6,7 @@ import numpy as np
 from torch.autograd import Variable
 import torch
 from math import log
-import ModelConstants
+import Constants
 from torchvision import transforms
 
 class DeepHDRModel(nn.Module):
@@ -99,15 +99,15 @@ def train_DirectDeepHDR(patches, labels):
         cnn = DirectDeepHDR()
         cnn = cnn.cuda()
 
-        optimizer = torch.optim.Adam(cnn.parameters(), ModelConstants.learning_rate)
+        optimizer = torch.optim.Adam(cnn.parameters(), Constants.learning_rate)
         start_batch_index = 0
-        end_batch_index = ModelConstants.batch_size
-        for i in range(ModelConstants.num_iterations):
+        end_batch_index = Constants.batch_size
+        for i in range(Constants.num_iterations):
             batch_patches = Variable(patches[start_batch_index:end_batch_index]).cuda()
             batch_labels = Variable(labels[start_batch_index:end_batch_index]).cuda()
 
             start_batch_index = end_batch_index
-            end_batch_index = (end_batch_index + ModelConstants.batch_size - 1) % patches.size()[0] + 1
+            end_batch_index = (end_batch_index + Constants.batch_size - 1) % patches.size()[0] + 1
 
             optimizer.zero_grad()
 

@@ -1,16 +1,9 @@
-Classes :
-	DataAugmenter
-	Preprocessor
-	Utiliy
-	(Possiblement) HDRMaker
-	(qui appelerait les methodes apres que preprocessor ait fait ses affaires) (remplacerait la classe Image, je sais pas lequel serait le mieux)
-
 Methodes :
 	Package DataAugmenter :
 		AugmentData()
 		Apply_Random_Transformation(img)
 
-	Package Preprocessor :
+	(done) Package Preprocessor :
 		ReadExpoTimes()
 		ReadImages()
 		Demosaic()
@@ -20,8 +13,6 @@ Methodes :
 
 	Package ImageUtilities :
 		CropImage()
-		ReadImage()
-		ReadExpoTime()
 		LDRToHDR()
 		HDRToLDR()
 		LDRToLDR()
