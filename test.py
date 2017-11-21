@@ -17,8 +17,8 @@ net = Net()
 criterion = nn.MSELoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-x = Variable(torch.cuda.randn(5, 3))
-y = Variable(torch.cuda.randn(5, 2))
+x = Variable(torch.randn(2, 2, 5, 3).cuda())
+y = Variable(torch.randn(2, 2, 5, 2).cuda())
 
 net = net.cuda()
 

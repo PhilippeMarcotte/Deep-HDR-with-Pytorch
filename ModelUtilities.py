@@ -7,7 +7,7 @@ def extract_patches_from_image(img, patch_size, stride):
 def weighted_average(weights, imgs, num_channels):
     assert weights.size() == imgs.size()
     assert weights.size()[1] % num_channels == 0
-
+    
     mat_size = weights.size()
     num_imgs = mat_size[1] / num_channels
 
@@ -25,3 +25,13 @@ def weighted_average(weights, imgs, num_channels):
 
 def LDR_to_HDR(imgs, expo, gamma):
     return (imgs ** gamma) / expo
+
+def l2_distance(result, target):
+        assert result.size() == target.size()
+        return (target - result).pow(2).sum()
+
+def tone_map(x):
+    return torch.log(x.mul(mu).add(1)) / log(1 + mu)
+
+def crop(imgs):
+    
