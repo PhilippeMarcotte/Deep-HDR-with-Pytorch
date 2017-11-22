@@ -1,6 +1,8 @@
 import os,glob
 from ImagePreprocessing import ReadExpoTimes, ReadTrainingData
 from ComputeTrainingExamples import ComputeTrainingExamples
+import Constants
+import numpy as np
 
 #TODO : Mettre dans un fichier Utilities
 #Read training folder content (scenePaths et nombre de scenes)
@@ -8,9 +10,10 @@ def listAllFiles(folderName):
 	#os.chdir(folderName)
 	return glob.glob(folderName)
 
-allSceneFolders = listAllFiles(Constants.folderName+'/*/')
+allSceneFolders = np.array(listAllFiles(Constants.folderName+'/*/'))
 print(allSceneFolders)
 print(len(allSceneFolders))
+print(allSceneFolders.shape)
 
 for scene in allSceneFolders :
     #Read Expo times in scene

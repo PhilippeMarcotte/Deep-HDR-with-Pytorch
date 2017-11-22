@@ -45,3 +45,12 @@ Ordre :
 	imgs.ComputeCeliu();
 	imgs.WarpUsingFlow();
 	imgs.isPixelNaN();
+
+
+Reste a implementer : 
+	Write Files after everything
+	ComputeTrainingExamples - PrepareInputFeatures			- ComputeOpticalFlow
+															- LDRtoLDR
+															- LDRtoHDR
+							- AugmentData
+							- Patches (including subset)

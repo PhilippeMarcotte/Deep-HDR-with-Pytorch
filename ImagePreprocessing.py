@@ -12,7 +12,7 @@ def ReadImages(fileNames):
 	imgs = []
 	for img in fileNames:
 		imgs.append(cv2.imread(img))
-	return imgs
+	return np.array(imgs)
 
 def Demosaic(imgs):
 	demosaicedArray = []
