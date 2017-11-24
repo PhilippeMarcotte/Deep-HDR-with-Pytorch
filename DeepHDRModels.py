@@ -51,7 +51,7 @@ class DeepHDRModel(nn.Module):
                 init_weight(module.weight)
 
     def other_forward_steps(self, x):
-        return tone_map(hdr_img)
+        return range_compressor(hdr_img)
 
     def forward(self, x):
         out = self.layer1(x)

@@ -10,21 +10,20 @@ from ModelUtilities import psnr
 import shutil
 
 class DeepHDRTrainer(ABC):
-    def __init__(self, checkpoint_name=None, checkpoints_folder = "./checkpoints/"):
+    def __init__(self, model_name=None, checkpoint_name=None, checkpoints_folder = "./checkpoints/"):
         self.cnn = self.__build_model__()
-        self.cuda_device_count = torch.cuda.device_count() - 1
+        self.cuda_device_index = torch.cuda.device_count() - 1
         if torch.cuda.is_available():
-            self.cnn = self.cnn.cuda(self.cuda_device_count)
+            self.cnn = self.cnn.cuda(self.cuda_device_index)
 
-        self.checkpoints_folder = os.path.join(checkpoints_folder, "")
+        self.checkpoints_folder = os.path.join(checkpoints_folder, model_name, "")
 
         self.starting_iteration = 0
         self.optimizer = torch.optim.Adam(self.cnn.parameters(), TrainingConstants.learning_rate)
 
         self.best_psnr = 0
 
-        if not os.path.exists(checkpoints_folder):
-            os.makedirs(checkpoints_folder)
+        os.makedirs(self.checkpoints_folder, exist_ok=True)
         
         if checkpoint_name:
             checkpoint_name = self.checkpoints_folder + checkpoint_name
@@ -64,8 +63,8 @@ class DeepHDRTrainer(ABC):
                 labels = Variable(labels)
 
                 if torch.cuda.is_available():
-                    patches = patches.cuda(self.cuda_device_count)
-                    labels = labels.cuda(self.cuda_device_count)
+                    patches = patches.cuda(self.cuda_device_index)
+                    labels = labels.cuda(self.cuda_device_index)
                         
                 self.optimizer.zero_grad()
 
@@ -89,21 +88,27 @@ class DeepHDRTrainer(ABC):
         for i, (scene_imgs, scene_labels) in enumerate(scene_loader):            
             patches = DeepHDRPatches(scene_imgs.squeeze(), scene_labels.squeeze())
             patches_loader = torch.utils.data.DataLoader(patches, batch_size=20)
+            scene_outputs = []
+            scene_cropped_labels = []
             for j, (imgs, labels) in enumerate(patches_loader):
                 patches = Variable(imgs)
                 labels = Variable(labels)
 
                 if torch.cuda.is_available():
-                    patches = patches.cuda(self.cuda_device_count)
-                    labels = labels.cuda(self.cuda_device_count)
+                    patches = patches.cuda(self.cuda_device_index)
+                    labels = labels.cuda(self.cuda_device_index)
                         
                 self.optimizer.zero_grad()
 
                 output = self.cnn(patches)
+                scene_outputs.append(output.data)
+                scene_cropped_labels.append(labels.data)
 
-                sum_psnr += psnr(output, labels).data[0]          
+            outputs = torch.cat(scene_outputs, 0)
+            labels = torch.cat(scene_cropped_labels, 0)
+            sum_psnr += psnr(outputs, labels)
 
-        average_psnr = sum_psnr / (10*49*74*1/20) #SHOULD NOT BE HARDCODED
+        average_psnr = sum_psnr / scene_loader.__len__()
 
         print("validation psnr : {}".format(average_psnr))
 
@@ -135,21 +140,21 @@ class DeepHDRTrainer(ABC):
 
 class DirectDeepHDRTrainer(DeepHDRTrainer):
     def __init__(self, checkpoint=None, checkpoints_folder = "./checkpoints/"):
-        super(DirectDeepHDRTrainer, self).__init__(checkpoint, checkpoints_folder)
+        super(DirectDeepHDRTrainer, self).__init__("Direct", checkpoint, checkpoints_folder)
     
     def __build_model__(self):
         return DirectDeepHDR()
 
 class WeDeepHDRTrainer(DeepHDRTrainer):
     def __init__(self, checkpoint=None, checkpoints_folder = "./checkpoints/"):
-        super(WeDeepHDRTrainer, self).__init__(checkpoint, checkpoints_folder)
+        super(WeDeepHDRTrainer, self).__init__("WE", checkpoint, checkpoints_folder)
     
     def __build_model__(self):
         return WeDeepHDR()
 
 class WieDeepHDRTrainer(DeepHDRTrainer):
     def __init__(self, checkpoint=None, checkpoints_folder = "./checkpoints/"):
-        super(WieDeepHDRTrainer, self).__init__(checkpoint, checkpoints_folder)
+        super(WieDeepHDRTrainer, self).__init__("WIE", checkpoint, checkpoints_folder)
     
     def __build_model__(self):
         return WieDeepHDR()
