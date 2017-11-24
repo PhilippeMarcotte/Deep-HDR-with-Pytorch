@@ -1,5 +1,5 @@
 from skimage.util.shape import view_as_windows
-import torch
+#import torch
 import numpy as np
 import Constants
 from math import log

@@ -26,6 +26,8 @@ def ComputeTrainingExamples(imgs, expoTimes, label):
 
         #Array with only 0 except for patch
 
+    #TODO : Select subset
+
     return  imgs, label
 
 def PrepareInputFeatures(imgs, expoTimes, label):

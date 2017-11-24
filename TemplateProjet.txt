@@ -47,9 +47,8 @@ Ordre :
 	imgs.isPixelNaN();
 
 
-Reste a implementer : 
-	Write Files after everything
-	ComputeTrainingExamples - PrepareInputFeatures			- ComputeOpticalFlow
-															- LDR_to_LDR
-							- AugmentData
-							- Patches (including subset)
+Reste a implementer :
+	WarpUsingFlow
+	badINdices = darkRef & nan1 | !darRef & nan2
+	get_patches
+	write
