@@ -16,3 +16,5 @@ parts
 src/*.egg-info
 Train/*
 Test/*
+Validation/*
+checkpoints/*

@@ -1,7 +1,7 @@
 from skimage.util.shape import view_as_windows
-#import torch
+import torch
 import numpy as np
-    
+
 def extract_patches_from_image(img, patch_size, stride):
     #TODO : Modifer pour que ca prennent un array d imgs instead, et retourne un array de batchs
     # TODO : After debug, si l'array a 4 dimension, exemple : 3*1500*100*3, il fait des windows de (patch_size*patch_size*patch_size*patch_size)
@@ -39,9 +39,8 @@ def tone_map(x):
     return torch.log(x.mul(ModelsConstants.mu).add(1)) / log(1 + ModelsConstants.mu)
 
 def psnr(x, target):
-    num_pixels = np.size(x)
-    sqrdErr = l2_distance(x, target) / num_pixels
-    return 10 * log(1/sqrdErr)
+    sqrdErr = torch.mean((x - target) ** 2)
+    return 10 * torch.log(1/sqrdErr)
     
 def CropBoundariesMulti(imgs, cropSize):
     return imgs[:, cropSize : -cropSize + 1, cropSize : -cropSize + 1, :]

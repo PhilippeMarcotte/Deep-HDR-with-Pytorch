@@ -7,35 +7,39 @@ import itertools
 from DeepHDRModels import *
 from ModelUtilities import l2_distance
 from ModelUtilities import psnr
+import shutil
 
 class DeepHDRTrainer(ABC):
-    def __init__(self, checkpoint=None, checkpoints_folder = "./checkpoints/"):
+    def __init__(self, checkpoint_name=None, checkpoints_folder = "./checkpoints/"):
         self.cnn = self.__build_model__()
         self.cuda_device_count = torch.cuda.device_count() - 1
         if torch.cuda.is_available():
             self.cnn = self.cnn.cuda(self.cuda_device_count)
 
-        self.checkpoints_folder = os.path.join(checkpoints_folder, "training_started_{}".format(str(datetime.now())))
-
-        if not os.path.exists(self.checkpoints_folder):
-            os.makedirs(self.checkpoints_folder)
+        self.checkpoints_folder = os.path.join(checkpoints_folder, "")
 
         self.starting_iteration = 0
         self.optimizer = torch.optim.Adam(self.cnn.parameters(), TrainingConstants.learning_rate)
+
+        self.best_psnr = 0
+
+        if not os.path.exists(checkpoints_folder):
+            os.makedirs(checkpoints_folder)
         
-        if checkpoint:
-            if os.path.isfile(args.resume):
-                print("loading checkpoint '{}'".format(args.resume))
-                checkpoint = torch.load(args.resume)
-                self.starting_iteration = checkpoint['iteration']
-                best_prec1 = checkpoint['best_prec1']
-                model.load_state_dict(checkpoint['state_dict'])
-                optimizer.load_state_dict(checkpoint['optimizer'])
+        if checkpoint_name:
+            checkpoint_name = self.checkpoints_folder + checkpoint_name
+            if os.path.isfile(checkpoint_name):
+                print("loading checkpoint '{}'".format(checkpoint_name))
+                checkpoint = torch.load(checkpoint_name)
+                self.starting_iteration = checkpoint['epoch']
+                self.best_psnr = checkpoint['best_psnr']
+                self.cnn.load_state_dict(checkpoint['state_dict'])
+                self.optimizer.load_state_dict(checkpoint['optimizer'])
                 print("=> loaded checkpoint '{}' (epoch {})"
-                    .format(args.resume, checkpoint['epoch']))
+                    .format(checkpoint_name, checkpoint['epoch']))
             else:
-                print("no checkpoint found at '{}'".format(args.resume))
-                print("starting normally")
+                print("no checkpoint found at '{}'".format(checkpoint_name))
+                print("starting with no checkpoint")
 
     def train(self):
         assert self.cnn
@@ -48,12 +52,13 @@ class DeepHDRTrainer(ABC):
             try:
                 scene_imgs, scene_labels = it.next()
             except StopIteration:
+                print("resetting dataloader")
                 scene_loader = torch.utils.data.DataLoader(scenes, shuffle=True)
                 it = iter(scene_loader)
                 scene_imgs, scene_labels = it.next()
                 
             patches = DeepHDRPatches(scene_imgs.squeeze(), scene_labels.squeeze())
-            patches_loader = torch.utils.data.DataLoader(patches, batch_size=20, shuffle=True)
+            patches_loader = torch.utils.data.DataLoader(patches, batch_size=20, shuffle=True, pin_memory=True)
             for j, (imgs, labels) in enumerate(patches_loader):
                 patches = Variable(imgs)
                 labels = Variable(labels)
@@ -68,15 +73,13 @@ class DeepHDRTrainer(ABC):
 
                 loss = l2_distance(output, labels)
 
-                print(loss.data[0])
-
                 loss.backward()
 
                 self.optimizer.step()
 
             if iteration % TrainingConstants.validation_frequency == 0:
                 is_best = self.validating()
-                self.__make_checkpoint__(iteration, is_best)                
+                self.__make_checkpoint__(iteration, is_best)
     
     def validating(self):
         scenes = DeepHDRScenes(root="./Validation/")
@@ -98,13 +101,15 @@ class DeepHDRTrainer(ABC):
 
                 output = self.cnn(patches)
 
-                loss = l2_distance(output, labels)
+                sum_psnr += psnr(output, labels).data[0]          
 
-                print(loss.data[0])
+        average_psnr = sum_psnr / (10*49*74*1/20) #SHOULD NOT BE HARDCODED
 
-                sum_psnr += psnr(output, labels)
-            
-        average_psnr = sum_psnr / 45                
+        print("validation psnr : {}".format(average_psnr))
+
+        if self.best_psnr < average_psnr:
+            self.best_psnr = average_psnr
+            return True
 
         return False
             
@@ -118,9 +123,9 @@ class DeepHDRTrainer(ABC):
         filename = filename.format(checkpoint_datetime)
         
         state = {
-            'epoch': iteration,
+            'iteration': iteration,
             'state_dict': self.cnn.state_dict(),
-            'best_prec1': best_prec1,
+            'best_psnr': self.best_psnr,
             'optimizer' : self.optimizer.state_dict(),
         }
         
