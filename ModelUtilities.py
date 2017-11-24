@@ -1,8 +1,12 @@
 from skimage.util.shape import view_as_windows
 import torch
+import ModelsConstants
+from torchvision import transforms
+from math import log
+import numpy as np
     
 def extract_patches_from_image(img, patch_size, stride):
-    return view_as_windows(img, (self.patch_size, self.patch_size), self.stride)
+    return view_as_windows(img, (patch_size, patch_size), stride)
 
 def weighted_average(weights, imgs, num_channels):
     assert weights.size() == imgs.size()
@@ -31,7 +35,10 @@ def l2_distance(result, target):
         return (target - result).pow(2).sum()
 
 def tone_map(x):
-    return torch.log(x.mul(mu).add(1)) / log(1 + mu)
+    return torch.log(x.mul(ModelsConstants.mu).add(1)) / log(1 + ModelsConstants.mu)
 
-def crop(imgs):
+def psnr(x, target):
+    num_pixels = np.size(x)
+    sqrdErr = l2_distance(x, target) / num_pixels
+    return 10 * log(1/sqrdErr)
     

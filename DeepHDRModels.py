@@ -1,13 +1,12 @@
 import torch.nn as nn
-from ModelUtilities import weighted_average
-from ModelUtilities import LDR_to_HDR
-from ModelUtilities import l2_distance
+from ModelUtilities import *
 import numpy as np
 from torch.autograd import Variable
 import torch
-from math import log
-import ModelConstants
-from torchvision import transforms
+import ModelsConstants
+import torchvision.datasets as datasets
+from PIL import Image
+from DeepHDRDatasets import *
 
 class DeepHDRModel(nn.Module):
     def __init__(self, out_channels = 3, use_xavier_init_uniformally = True):
@@ -52,39 +51,52 @@ class DeepHDRModel(nn.Module):
                 init_weight(module.weight)
 
     def other_forward_steps(self, x):
-        return x
+        return tone_map(hdr_img)
 
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        hdr_img = self.other_forward_steps(out)
-        return self.tone_map(hdr_img)
+        imgs = self.other_forward_steps(out)
+        return imgs
 
 class DirectDeepHDR(DeepHDRModel):
     def __init__(self):
         super(DirectDeepHDR, self).__init__(3)
+    
+    def other_forward_steps(self, x):
+        return x
 
 class WeDeepHDR(DeepHDRModel):
     def __init__(self, images):
         super(WeDeepHDR, self).__init__(9)
     
     def other_forward_steps(self, weights):
-        return weighted_average(weights, self.images[:, 9:18], 3)
+        return weighted_average(weights, self.images[:, 9:18], ModelsConstants.num_channels)
 
-class WieDeepHDRRefiner(DeepHDRModel)
+class WieDeepHDRRefiner(DeepHDRModel):
     def __init__(self):
         super(WieDeepHDRRefiner, self).__init__(9)
 
 class WieDeepHDR(DeepHDRModel):
     def __init__(self, expo, gamma):
         super(WieDeepHDR, self).__init__()
+    
+    def phase1_foward(self, x):
+        return x
+
+    def setPhase1():
+        self.phase_forward = self.phase1_foward
+    
+    def phase2_foward(self, x):
+        return weighted_average(weights, self.images[:, 9:18], ModelsConstants.num_channels)
+
+    def setPhase2():
+        self.phase_forward = self.phase2_foward
 
     def other_forward_steps(self, x, ):
-        
-        # return HDR image from weighted mean
-        raise NotImplementedError("")
+        return self.phase_forward(x)
 
     def refined_LDR_images(self, x):
         x = x.clamp(0,1)
@@ -94,36 +106,3 @@ class WieDeepHDR(DeepHDRModel):
 
         HDR_imgages = [low_expo_HDR, med_expo_HDR, hig_expo_HDR]
         return torch.cat(HDR_imgages, 1)
-
-def train_DirectDeepHDR(patches, labels):
-        cnn = DirectDeepHDR()
-        cnn = cnn.cuda()
-
-        optimizer = torch.optim.Adam(cnn.parameters(), ModelConstants.learning_rate)
-        start_batch_index = 0
-        end_batch_index = ModelConstants.batch_size
-        for i in range(ModelConstants.num_iterations):
-            batch_patches = Variable(patches[start_batch_index:end_batch_index]).cuda()
-            batch_labels = Variable(labels[start_batch_index:end_batch_index]).cuda()
-
-            start_batch_index = end_batch_index
-            end_batch_index = (end_batch_index + ModelConstants.batch_size - 1) % patches.size()[0] + 1
-
-            optimizer.zero_grad()
-
-            output = cnn(batch_patches)
-
-            loss = l2_distance(output, batch_labels)
-
-            print(loss.data[0])
-
-            loss.backward()
-
-            optimizer.step()
-        
-patch = torch.arange(0,40*18*40*40).view(40,18,40,40)
-
-label = torch.arange(0,40*3*28*28).view(40,3,28,28)
-label = label.clamp(0,1)
-
-train_DirectDeepHDR(patch, label)
