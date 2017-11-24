@@ -51,3 +51,14 @@ def ReadTrainingData(fileNames):
 def ReadLabel(fileName):
 	label = imageio.imread(fileName[:fileName.rfind("/")+1] + 'HDRImg.hdr', 'hdr')
 	return label
+
+def select_subset(patches):
+	maxTh = 0.8
+	minTh = 0.2
+
+	thresh = 0.5 * 40 * 40 * 3
+
+	badInds = np.logical_or(patches > maxTh, patches < minTh)
+
+	indices = badInds.sum(3).sum(2).sum(1) > thresh
+	return np.where(indices == 1)[0]
