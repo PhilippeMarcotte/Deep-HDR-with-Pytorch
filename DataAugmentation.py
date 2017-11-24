@@ -69,12 +69,3 @@ class ImageAugmentation():
 
         return np.concatenate(transformed_inputs), np.concatenate(transformed_labels)
         
-x = np.random.randint(0, 256, (18, 40, 40))
-y = np.random.randint(0, 256, (3, 40, 40))
-
-aug = ImageAugmentation()
-
-x, y = aug.augment(x, y)
-        
-               
-        
