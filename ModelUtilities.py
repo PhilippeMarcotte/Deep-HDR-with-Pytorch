@@ -1,8 +1,9 @@
 from skimage.util.shape import view_as_windows
-#import torch
+import torch
 import numpy as np
 import Constants
-    
+from math import log
+
 def extract_patches_from_image(img, patch_size, stride):
     #TODO : Modifer pour que ca prennent un array d imgs instead, et retourne un array de batchs
     # TODO : After debug, si l'array a 4 dimension, exemple : 3*1500*1000*3, il fait des windows de (patch_size*patch_size*patch_size*patch_size)
@@ -49,9 +50,13 @@ def l2_distance(result, target):
         assert result.size() == target.size()
         return (target - result).pow(2).sum()
 
-def tone_map(x):
-    return torch.log(x.mul(mu).add(1)) / log(1 + mu)
+def range_compressor(x):
+    return torch.log(x.mul(ModelsConstants.mu).add(1)) / log(1 + ModelsConstants.mu)
 
+def psnr(x, target):
+    sqrdErr = torch.mean((x - target) ** 2)
+    return 10 * log(1/sqrdErr)
+    
 # Je pense que ces fonctions crop pas la bonne taille. Je crois qu<il faut enlever le -1
 # A voir
 def CropBoundariesMulti(imgs, cropSize):
