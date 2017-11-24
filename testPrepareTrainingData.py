@@ -24,6 +24,9 @@ for scene in allSceneFolders :
     fileNames = listAllFiles(scene+'/*.tif')
     imgs, label = ReadTrainingData(fileNames)
 
+    imgs = imgs/255
+    # TODO : Remettre entre 0 et 255 avant d'ecrire la matrice
+
     #ComputeTraining examples in scene
     computed, computedLabel = ComputeTrainingExamples(imgs, expoTimes, label)
 

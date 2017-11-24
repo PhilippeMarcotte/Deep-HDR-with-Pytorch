@@ -50,7 +50,6 @@ Ordre :
 Reste a implementer : 
 	Write Files after everything
 	ComputeTrainingExamples - PrepareInputFeatures			- ComputeOpticalFlow
-															- LDRtoLDR
-															- LDRtoHDR
+															- LDR_to_LDR
 							- AugmentData
 							- Patches (including subset)

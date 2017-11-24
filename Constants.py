@@ -7,3 +7,4 @@ folderName = '/home/uvilleneuve/Documents/INF8702/Projet/Training'
 patchSize = 40
 nbreAugmentations = 10
 nbreTotalAugmentations = 48
+gamma = 2.2

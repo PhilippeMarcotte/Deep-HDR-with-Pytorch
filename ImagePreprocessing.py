@@ -3,8 +3,6 @@ import numpy as np
 from colour_demosaicing import demosaicing_CFA_Bayer_Malvar2004, mosaicing_CFA_Bayer
 import imageio
 
-GAMMA = 2.2
-
 def ReadExpoTimes(fileName):
 	return np.power(2, np.loadtxt(fileName))
 
