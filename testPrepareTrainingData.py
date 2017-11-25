@@ -8,7 +8,7 @@ import numpy as np
 #Read training folder content (scenePaths et nombre de scenes)
 def listAllFiles(folderName):
 	#os.chdir(folderName)
-	return glob.glob(folderName)
+	return sorted(glob.glob(folderName))
 
 allSceneFolders = np.array(listAllFiles(Constants.folderName+'/*/'))
 print(allSceneFolders)

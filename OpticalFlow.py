@@ -1,6 +1,7 @@
 import numpy as np
 import pyflow
 from ModelUtilities import LDR_to_LDR
+from scipy.interpolate import griddata
 
 def ComputeOpticalFlow(imgs, expoTimes):
     warped = np.empty(imgs.shape)
@@ -21,8 +22,8 @@ def ComputeOpticalFlow(imgs, expoTimes):
     for i in range(0,1):
         flow[i] = ComputeCeLiu(expoAdj[i][1], expoAdj[i][0])
 
-    #warped[0] = WarpUsingFlow(imgs[0], flow[0]);
-    #warped[2] = WarpUsingFlow(imgs[2], flow[1]);
+    warped[0] = WarpUsingFlow(imgs[0], flow[0])
+    warped[2] = WarpUsingFlow(imgs[2], flow[1])
 
     return warped
 
@@ -71,48 +72,75 @@ def ComputeCeLiu(target, source):
 
 def WarpUsingFlow(imgs, flows):
 
-# TODO: Dont think we need this param
-#if (~exist('needBase', 'var') || isempty(needBase))
-#    needBase = true;
-#end
+    # TODO: Dont think we need this param
+    #if (~exist('needBase', 'var') || isempty(needBase))
+    #    needBase = true;
+    #end
 
-# We decided we didnt need this
-#flows = gather(flows);
+    # We decided we didnt need this
+    #flows = gather(flows);
+    print(imgs.shape)
 
-hi = imgs.shape[1]
-wi = imgs.shape[2]
-c = imgs.shape[3]
-nbreImgs = imgs.shape[0]
+    hi = imgs.shape[0]
+    wi = imgs.shape[1]
+    c = imgs.shape[2]
+    nbreImgs = 1
 
-hf = flows.shape[0]
-wf = flows.shape[1]
+    hf = flows.shape[0]
+    wf = flows.shape[1]
 
-hd = (hi - hf) / 2; wd = (wi - wf) / 2;
+    hd = (hi - hf) / 2
+    wd = (wi - wf) / 2
 
-warped = np.empty(nbreImgs, hf, wf, c)
+    warped = np.empty((hf, wf, c))
 
-[X, Y] = meshgrid(1:wf, 1:hf);
-[Xi, Yi] = meshgrid(1-wd:wf+wd, 1-hd:hf+hd);
+    X, Y = np.meshgrid(np.arange(0, wf), np.arange(0, hf))
+    Xi, Yi = np.meshgrid(np.arange(wd, wf+wd), np.arange(hd, hf+hd))
+    print("X Y")
+    print(X)
+    print(Y)
+    print("Xi Yi")
+    print(Xi)
+    print(Yi)
 
-for j = 1 : numImages
-    for i = 1 : c
-        
+    for i in range(0, c-1):
+        '''
         if (needBase)
-            curX = X + flows(:, :, 1, j);
-            curY = Y + flows(:, :, 2, j);
+            curX = X + flows[:, :, 0]
+            curY = Y + flows[:, :, 1]
         else
-            curX = flows(:, :, 1, j);
-            curY = flows(:, :, 2, j);
-        end
+        '''
+        curX = flows[:, :, 0]
+        curY = flows[:, :, 1]
+        #end
         
-        warped(:, :, i, j) = interp2(Xi, Yi, imgs(:, :, i, j), curX, curY, 'cubic', nan);
-    end
-end
+        #warped[:, :, i] = scipy.(Xi, Yi, imgs[:, :, i], curX, curY, 'cubic', nan)
+        print("Xi, Yi, imgs, imgs[:,:,i], curX, curY shapes")
+        print(Xi.shape)
+        print(Yi.shape)
+        Zi = (Xi, Yi)
+        p = np.broadcast_arrays(*Zi)
+        n = len(p)
+        for j in range(1, n):
+            if p[j].shape != p[0].shape:
+                raise ValueError("coordinate arrays do not have the same shape")
+        Zi = np.empty(p[0].shape + (len(Zi),), dtype=float)
+        for j, item in enumerate(p):
+            Zi[...,j] = item
+        print(Zi.shape)
+        print(Zi.shape[0])
+        #print((Xi, Yi).shape)
+        print(imgs[:,:,i].shape)
+        print(imgs[:,:,i].shape[0])
+        print(curX.shape)
+        print(curY.shape)
+        warped[:,:,i] = griddata((Xi, Yi), imgs[:,:,i], (curX, curY), method='cubic')
 
-warped = Clamp(warped, 0, 1);
+    warped = np.clip(warped, 0, 1);
 
-% warped(isnan(warped)) = 0;
-    return
+    #%warped(isnan(warped)) = 0;
+             
+    return warped
 
 def isPixelNaN(img):
     # Numpy isNan : retourne vecteur de meme dim, avec 0 ou 1 si non-NaN ou si NaN
