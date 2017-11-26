@@ -5,11 +5,10 @@ import Constants
 from math import log
 
 def extract_patches_from_image(img, patch_size, stride):
-    #TODO : Modifer pour que ca prennent un array d imgs instead, et retourne un array de batchs
-    # TODO : After debug, si l'array a 4 dimension, exemple : 3*1500*1000*3, il fait des windows de (patch_size*patch_size*patch_size*patch_size)
-    # Donc il faut appeler view_as_windows, pour chaque image de l'array d'images et pour chaque couleurs.
-    # Expect ouput to be huge since its gonna be 1480 * 980 patches de 40*40 pour chaque image, pour chaque couleur = 
-    return view_as_windows(img, (patch_size, patch_size, 1), stride)
+    patches = view_as_windows(img, (patch_size, patch_size, img.shape[-1]), stride)
+    patches = patches.reshape((-1, patch_size, patch_size, img.shape[-1]))
+    patches = np.rollaxis(patches, axis=0, start=4)
+    return patches
 
 def weighted_average(weights, imgs, num_channels):
     assert weights.size() == imgs.size()
@@ -59,8 +58,5 @@ def psnr(x, target):
     
 # Je pense que ces fonctions crop pas la bonne taille. Je crois qu<il faut enlever le -1
 # A voir
-def CropBoundariesMulti(imgs, cropSize):
-    return imgs[:, cropSize : -cropSize + 1, cropSize : -cropSize + 1, :]
-
-def CropBoundariesSingle(img, cropSize):
-    return img[cropSize : -cropSize + 1, cropSize : -cropSize + 1, :]
+def CropBoundaries(imgs, cropSize):
+    return imgs[cropSize : -cropSize, cropSize : -cropSize, :]

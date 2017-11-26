@@ -1,4 +1,4 @@
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image
 import numpy as np
 from itertools import permutations
 
@@ -16,7 +16,7 @@ class Rotate90(object):
         self.num_times = num_times
 
     def __call__(self, img):
-        return np.rot90(img, self.num_times, (-2, -1))
+        return np.rot90(img, self.num_times)
 
 class Fliplr(object):
     def __call__(self, img):
@@ -31,7 +31,7 @@ class SwapColorChannels(object):
         self.color_channels_order = color_channels_order
 
     def __call__(self, img):
-        return img[self.color_channels_order, :, :]
+        return img[:, :, self.color_channels_order]
 
 class ImageAugmentation():
     def __init__(self):
@@ -54,18 +54,11 @@ class ImageAugmentation():
                                                     ]))
     
     def augment(self, x, y):
-        transformed_inputs = []
-        transformed_labels = []
-        for i in range(10):
-            transformed_input = np.zeros(x.shape)
-            for j in range(6):
-                index = np.random.randint(0, len(self.transformations))
-                transformed_input[j*3:(j+1)*3] = self.transformations[index](x[j*3:(j+1)*3])
-               
-            transformed_inputs.append(transformed_input)
+        index = np.random.randint(0, len(self.transformations))
+        
+        transformed_input = [self.transformations[index](x[:,:,j*3:(j+1)*3]) for j in range(6)]
 
-            transformed_label = self.transformations[index](y)
-            transformed_labels.append(transformed_label)
+        transformed_label = self.transformations[index](y)
 
-        return np.concatenate(transformed_inputs), np.concatenate(transformed_labels)
+        return np.concatenate(transformed_input, 2), transformed_label
         

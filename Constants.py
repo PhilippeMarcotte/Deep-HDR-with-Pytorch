@@ -3,8 +3,13 @@ learning_rate = 0.0001
 num_iterations = 2
 mu = 5000
 crop = 50
-folderName = '/home/uvilleneuve/Documents/INF8702/Projet/Training'
 patchSize = 40
-nbreAugmentations = 10
+stride = 20
+num_augmentations = 10
 nbreTotalAugmentations = 48
 gamma = 2.2
+
+training_directory = "Training/"
+test_directory = "Test/"
+training_data_root = "./training_data/"
+scenes_root = './scenes/'
