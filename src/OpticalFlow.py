@@ -17,7 +17,7 @@ def ComputeOpticalFlow(imgs, expoTimes):
 
     expoAdj[1] = np.flip(expoAdj[1], 0)
     
-    flows = Parallel(n_jobs=-1)(delayed(ComputeCeLiu)(expoAdj[i][1], expoAdj[i][0]) for i in range(2))
+    flows = [ComputeCeLiu(expoAdj[i][1], expoAdj[i][0]) for i in range(2)]
 
     warped[0] = WarpUsingFlow(imgs[0], flows[0])
     warped[2] = WarpUsingFlow(imgs[2], flows[1])
