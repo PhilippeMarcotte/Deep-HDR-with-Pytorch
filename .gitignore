@@ -18,3 +18,5 @@ Train/*
 Test/*
 Validation/*
 checkpoints/*
+training_data/*
+scenes/*
