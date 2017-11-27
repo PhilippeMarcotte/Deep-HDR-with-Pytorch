@@ -161,6 +161,7 @@ class WieDeepHDRTrainer(DeepHDRTrainer):
         return WieDeepHDR()
         
 
-trainer = DirectDeepHDRTrainer()
+if __name__ == "__main__":
+    trainer = DirectDeepHDRTrainer()
 
-trainer.train()
+    trainer.train()
