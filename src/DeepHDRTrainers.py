@@ -8,6 +8,7 @@ from DeepHDRModels import *
 from ModelUtilities import l2_distance
 from ModelUtilities import psnr
 import shutil
+import Constants
 
 class DeepHDRTrainer(ABC):
     def __init__(self, model_name=None, checkpoint_name=None, checkpoints_folder = "./checkpoints/"):
@@ -43,7 +44,7 @@ class DeepHDRTrainer(ABC):
     def train(self):
         assert self.cnn
 
-        scenes = DeepHDRScenes(root="./Train/")
+        scenes = DeepHDRScenes(root=os.path.join(Constants.training_data_root, Constants.training_directory))
         scene_loader = torch.utils.data.DataLoader(scenes, shuffle=True)      
 
         it = iter(scene_loader)
@@ -81,7 +82,7 @@ class DeepHDRTrainer(ABC):
                 self.__make_checkpoint__(iteration, is_best)
     
     def validating(self):
-        scenes = DeepHDRScenes(root="./Validation/")
+        scenes = DeepHDRScenes(root=os.path.join(Constants.training_data_root, Constants.test_directory))
 
         scene_loader = torch.utils.data.DataLoader(scenes)
         sum_psnr = 0
