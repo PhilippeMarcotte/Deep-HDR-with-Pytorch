@@ -5,6 +5,7 @@ import Constants
 import numpy as np
 from joblib import Parallel, delayed
 import multiprocessing
+from contextlib import closing
 
 def listAllFolder(folderName):
 	return next(os.walk(folderName))[1]
@@ -69,9 +70,8 @@ def distribute_training_data_preparation():
 
     #Parallel(n_jobs=-1)(delayed(prepare_training_data)(scene, is_training_set) for (scene, is_training_set) in parameters)
 
-    pool = multiprocessing.pool.Pool(processes=2)
-
-    results = pool.imap_unordered(prepare_training_data, parameters)
+    with closing(multiprocessing.pool.Pool(processes=4, maxtasksperchild=1)) as pool:
+    	results = pool.imap(prepare_training_data, parameters, chunksize=5)
 
     for result in results:
         print(result)
@@ -92,4 +92,5 @@ def distribute_training_data_preparation():
     '''
 
 if __name__ == "__main__":
-    distribute_training_data_preparation()
+    #distribute_training_data_preparation()
+    prepare_training_data(("001", True))  
