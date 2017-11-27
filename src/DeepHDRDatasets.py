@@ -18,12 +18,12 @@ class DeepHDRScenes(Dataset):
         scene = math.floor(index/self.num_patches)
         scene = self.scenes[scene]
 
-        scene_labels = np.fromfile(os.path.join(self.root, scene, "label"), dtype='uint8')
+        scene_labels = np.fromfile(os.path.join(self.root, scene, "label"), dtype='float32')
         scene_labels = np.reshape(scene_labels, (40, 40, 3, -1))
         scene_labels = np.rollaxis(np.rollaxis(scene_labels, 3), 3, 1)
         scene_labels = np.squeeze(scene_labels)        
         
-        scene_imgs = np.fromfile(os.path.join(self.root, scene, "imgs"), dtype='uint8')
+        scene_imgs = np.fromfile(os.path.join(self.root, scene, "patches"), dtype='float32')
         scene_imgs = np.reshape(scene_imgs, (40, 40, 3, -1))
         scene_imgs = np.rollaxis(np.rollaxis(scene_imgs, 3), 3, 1)
         scene_imgs = np.squeeze(scene_imgs)
@@ -40,12 +40,11 @@ class DeepHDRPatches(Dataset):
         self.label_transforms = transforms.Compose([
                         transforms.ToPILImage(),
                         transforms.CenterCrop(ModelsConstants.cnn_ouput_size),
-                        transforms.ToTensor(),
-                        transforms.Lambda(lambda crop: crop.renorm(1, 0, 255))
+                        transforms.ToTensor()
                         ])
     
     def __getitem__(self, index):
-        imgs = self.scene_imgs[index].float().renorm(1, 0, 255)
+        imgs = self.scene_imgs[index]
 
         label = self.scene_labels[index]
         label = self.label_transforms(label)
