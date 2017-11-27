@@ -5,9 +5,20 @@ import Constants
 from math import log
 
 def extract_patches_from_image(img, patch_size, stride):
+    '''
     patches = view_as_windows(img, (patch_size, patch_size, img.shape[-1]), stride)
     patches = patches.reshape((-1, patch_size, patch_size, img.shape[-1]))
     patches = np.rollaxis(patches, axis=0, start=4)
+    '''
+    [height, width, depth] = img.shape
+    num_patches = (np.floor((width - patch_size) / stride) + 1) * (np.floor((height - patch_size) / stride) + 1)
+    patches = np.zeros((patch_size, patch_size, depth, num_patches.astype('int')))
+
+    count = 0
+    for x in range(0, width - patch_size, stride):
+        for y in range(0, height - patch_size, stride):
+            count += 1
+            patches[:, :, :, count] = img[y:y + patch_size, x:x + patch_size, :]
     return patches
 
 def weighted_average(weights, imgs, num_channels):

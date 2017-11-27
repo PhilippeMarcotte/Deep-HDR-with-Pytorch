@@ -17,8 +17,8 @@ def ComputeOpticalFlow(imgs, expoTimes):
 
     expoAdj[1] = np.flip(expoAdj[1], 0)
     
-    flows = [ComputeCeLiu(expoAdj[i][1], expoAdj[i][0]) for i in range(2)]
-
+    #flows = [ComputeCeLiu(expoAdj[i][1], expoAdj[i][0]) for i in range(2)]
+    flows = np.squeeze(io.loadmat("./output1.mat")["flow"])
     warped[0] = WarpUsingFlow(imgs[0], flows[0])
     warped[2] = WarpUsingFlow(imgs[2], flows[1])
 
@@ -90,7 +90,7 @@ def WarpUsingFlow(imgs, flows):
     Y_X = (Y.flatten(),X.flatten())
 
     for i in range(0, c):        
-        warped[:,:,i] = map_coordinates(imgs[:,:,i], [curY, curX], cval=np.nan)
+        warped[:,:,i] = griddata(Y_X, imgs[:,:,i].flatten(), curY_X, method="cubic")
 
     warped = np.clip(warped, 0, 1)
 
