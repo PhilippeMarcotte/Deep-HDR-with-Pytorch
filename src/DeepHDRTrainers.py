@@ -9,6 +9,7 @@ from ModelUtilities import l2_distance
 from ModelUtilities import psnr
 import shutil
 import Constants
+from tqdm import tqdm
 
 class DeepHDRTrainer(ABC):
     def __init__(self, model_name=None, checkpoint_name=None, checkpoints_folder = "./checkpoints/"):
@@ -45,48 +46,46 @@ class DeepHDRTrainer(ABC):
         assert self.cnn
 
         scenes = DeepHDRScenes(root=os.path.join(Constants.training_data_root, Constants.training_directory))
-        scene_loader = torch.utils.data.DataLoader(scenes, shuffle=True)      
 
-        it = iter(scene_loader)
-        for iteration in range(self.starting_iteration, TrainingConstants.num_iterations):
-            try:
-                scene_imgs, scene_labels = it.next()
-            except StopIteration:
-                print("resetting dataloader")
+        with tqdm(total=TrainingConstants.num_iterations - self.starting_iteration) as pbar:
+            iteration = self.starting_iteration
+            while iteration < TrainingConstants.num_iterations:
                 scene_loader = torch.utils.data.DataLoader(scenes, shuffle=True)
-                it = iter(scene_loader)
-                scene_imgs, scene_labels = it.next()
-                
-            patches = DeepHDRPatches(scene_imgs.squeeze(), scene_labels.squeeze())
-            patches_loader = torch.utils.data.DataLoader(patches, batch_size=20, shuffle=True, pin_memory=True)
-            for j, (imgs, labels) in enumerate(patches_loader):
-                patches = Variable(imgs)
-                labels = Variable(labels)
+                for i, (scene_imgs, scene_labels) in tqdm(enumerate(scene_loader)):
+                    patches = DeepHDRPatches(scene_imgs.squeeze(), scene_labels.squeeze())
+                    patches_loader = torch.utils.data.DataLoader(patches, batch_size=20, shuffle=True)
+                    for j, (imgs, labels) in enumerate(patches_loader):
+                        patches = Variable(imgs)
+                        labels = Variable(labels)
 
-                if torch.cuda.is_available():
-                    patches = patches.cuda(self.cuda_device_index)
-                    labels = labels.cuda(self.cuda_device_index)
-                        
-                self.optimizer.zero_grad()
+                        if torch.cuda.is_available():
+                            patches = patches.cuda(self.cuda_device_index)
+                            labels = labels.cuda(self.cuda_device_index)
+                                
+                        self.optimizer.zero_grad()
 
-                output = self.cnn(patches)
+                        output = self.cnn(patches)
 
-                loss = l2_distance(output, labels)
+                        loss = l2_distance(output, labels)
 
-                loss.backward()
+                        loss.backward()
 
-                self.optimizer.step()
+                        self.optimizer.step()
 
-            if iteration % TrainingConstants.validation_frequency == 0:
-                is_best = self.validating()
-                self.__make_checkpoint__(iteration, is_best)
+                        iteration += 1
+
+                        pbar.update(1)
+
+                        if iteration % TrainingConstants.validation_frequency == 0:
+                            is_best = self.validating()
+                            self.__make_checkpoint__(iteration, is_best)                
     
     def validating(self):
         scenes = DeepHDRScenes(root=os.path.join(Constants.training_data_root, Constants.test_directory))
 
         scene_loader = torch.utils.data.DataLoader(scenes)
         sum_psnr = 0
-        for i, (scene_imgs, scene_labels) in enumerate(scene_loader):            
+        for i, (scene_imgs, scene_labels) in tqdm(enumerate(scene_loader)):
             patches = DeepHDRPatches(scene_imgs.squeeze(), scene_labels.squeeze())
             patches_loader = torch.utils.data.DataLoader(patches, batch_size=20)
             scene_outputs = []
