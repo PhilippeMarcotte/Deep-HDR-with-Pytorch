@@ -19,11 +19,13 @@ class DeepHDRScenes(Dataset):
         scene = self.scenes[scene]
 
         scene_labels = np.fromfile(os.path.join(self.root, scene, "label"), dtype='uint8')
-        scene_labels = np.reshape(scene_labels, (self.num_patches, 3, 40, 40))
+        scene_labels = np.reshape(scene_labels, (40, 40, 3, -1))
+        scene_labels = np.rollaxis(np.rollaxis(scene_labels, 3), 3, 1)
         scene_labels = np.squeeze(scene_labels)        
         
         scene_imgs = np.fromfile(os.path.join(self.root, scene, "imgs"), dtype='uint8')
-        scene_imgs = scene_imgs.reshape((self.num_patches, 18, 40, 40))
+        scene_imgs = np.reshape(scene_imgs, (40, 40, 3, -1))
+        scene_imgs = np.rollaxis(np.rollaxis(scene_imgs, 3), 3, 1)
         scene_imgs = np.squeeze(scene_imgs)
 
         return (scene_imgs, scene_labels)
