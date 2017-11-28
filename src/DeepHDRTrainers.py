@@ -17,7 +17,9 @@ class DeepHDRTrainer(ABC):
         self.cnn = self.__build_model__()
         self.cuda_device_index = torch.cuda.device_count() - 1
         if torch.cuda.is_available():
-            self.cnn = self.cnn.cuda(self.cuda_device_index)
+            if torch.cuda.count_device() > 1:
+                self.cnn = torch.nn.DataParallel(self.cnn)
+                self.cnn = self.cnn.cuda()
 
         self.checkpoints_folder = os.path.join(checkpoints_folder, model_name, "")
 
@@ -59,8 +61,8 @@ class DeepHDRTrainer(ABC):
                             labels = Variable(labels)
 
                             if torch.cuda.is_available():
-                                patches = patches.cuda(self.cuda_device_index)
-                                labels = labels.cuda(self.cuda_device_index)
+                                patches = patches.cuda()
+                                labels = labels.cuda()
                                     
                             self.optimizer.zero_grad()
 
@@ -93,8 +95,8 @@ class DeepHDRTrainer(ABC):
                     labels = Variable(labels)
 
                     if torch.cuda.is_available():
-                        patches = patches.cuda(self.cuda_device_index)
-                        labels = labels.cuda(self.cuda_device_index)
+                        patches = patches.cuda()
+                        labels = labels.cuda()
                             
                     self.optimizer.zero_grad()
 
