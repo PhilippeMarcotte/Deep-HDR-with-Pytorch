@@ -5,33 +5,31 @@ import torch
 import math
 import torchvision.transforms as transforms
 import ModelsConstants
+from ModelUtilities import list_all_files_sorted
+import h5py
 
 class DeepHDRScenes(Dataset):
     def __init__(self, root):
         self.root = os.path.join(root, '')
 
-        self.scenes = next(os.walk(self.root))[1]
-
-        self.num_patches = 10*49*74
+        scenes = list_all_files_sorted(self.root)
+        self.hdf5_scenes = [h5py.File(scene) for scene in scenes]
         
     def __getitem__(self, index):
-        scene = math.floor(index/self.num_patches)
-        scene = self.scenes[scene]
+        scene = self.hdf5_scenes[index]
 
-        scene_labels = np.fromfile(os.path.join(self.root, scene, "label"), dtype='float32')
-        scene_labels = np.reshape(scene_labels, (40, 40, 3, -1))
-        scene_labels = np.rollaxis(np.rollaxis(scene_labels, 3), 3, 1)
-        scene_labels = np.squeeze(scene_labels)        
+        scene_labels = np.array(scene.get("labels"))
         
-        scene_imgs = np.fromfile(os.path.join(self.root, scene, "patches"), dtype='float32')
-        scene_imgs = np.reshape(scene_imgs, (40, 40, 18, -1))
-        scene_imgs = np.rollaxis(np.rollaxis(scene_imgs, 3), 3, 1)
-        scene_imgs = np.squeeze(scene_imgs)
+        scene_imgs = np.array(scene.get("inputs"))
 
         return (scene_imgs, scene_labels)
 
     def __len__(self):
-        return len(self.scenes)
+        return len(self.hdf5_scenes)
+
+    def close(self):
+        for scene in self.hdf5_scenes:
+            scene.close()
 
 class DeepHDRPatches(Dataset):
     def __init__(self, scene_imgs, scene_labels):

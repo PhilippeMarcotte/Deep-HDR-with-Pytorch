@@ -11,11 +11,10 @@ def ReadImages(fileNames):
 	imgs = []
 	for imgStr in fileNames:
 		img = cv2.imread(imgStr, -1)
-		#img = img[:, :, [2,1,0]]
 
 		# equivalent to im2single from Matlab
 		img = img / 2**16
-		#img = np.float32(img)
+		img = np.float32(img)
 
 		img.clip(0, 1)
 

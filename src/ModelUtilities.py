@@ -1,8 +1,15 @@
 from skimage.util.shape import view_as_windows
-#import torch
+import torch
 import numpy as np
 import Constants
 from math import log
+import os, glob
+
+def list_all_folders(folderName):
+	return next(os.walk(folderName))[1]
+
+def list_all_files_sorted(folderName, extension = ""):
+	return sorted(glob.glob(os.path.join(folderName, "*" + extension)))
 
 def extract_patches_from_image(img, patch_size, stride):
     '''
@@ -15,10 +22,10 @@ def extract_patches_from_image(img, patch_size, stride):
     patches = np.zeros((patch_size, patch_size, depth, num_patches.astype('int')))
 
     count = 0
-    for x in range(0, width - patch_size, stride):
-        for y in range(0, height - patch_size, stride):
-            count += 1
+    for x in range(0, width - patch_size + 1, stride):
+        for y in range(0, height - patch_size + 1, stride):            
             patches[:, :, :, count] = img[y:y + patch_size, x:x + patch_size, :]
+            count += 1
     return patches
 
 def weighted_average(weights, imgs, num_channels):

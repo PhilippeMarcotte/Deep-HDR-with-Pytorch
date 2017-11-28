@@ -3,9 +3,13 @@ import pyflow
 from ModelUtilities import LDR_to_LDR
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.interpolate import griddata
+from scipy.interpolate import CloughTocher2DInterpolator
+from scipy.interpolate import interp2d
+from scipy.interpolate import RectBivariateSpline
 from joblib import Parallel, delayed
 import multiprocessing
 import scipy.io as io
+from skimage.transform import warp
 
 def ComputeOpticalFlow(imgs, expoTimes):
     warped = np.empty(imgs.shape)
@@ -17,8 +21,8 @@ def ComputeOpticalFlow(imgs, expoTimes):
 
     expoAdj[1] = np.flip(expoAdj[1], 0)
     
-    #flows = [ComputeCeLiu(expoAdj[i][1], expoAdj[i][0]) for i in range(2)]
-    flows = np.squeeze(io.loadmat("./output1.mat")["flow"])
+    flows = [ComputeCeLiu(expoAdj[i][1], expoAdj[i][0]) for i in range(2)]
+
     warped[0] = WarpUsingFlow(imgs[0], flows[0])
     warped[2] = WarpUsingFlow(imgs[2], flows[1])
 
@@ -27,8 +31,6 @@ def ComputeOpticalFlow(imgs, expoTimes):
 def AdjustExposure(imgs, expoTimes):
     numImgs = imgs.shape[0]
     numExposures = expoTimes.shape
-
-    assert(numImgs == numExposures, 'The number of input images is not equal to the number of exposures');
 
     adjusted = np.empty((numImgs, imgs.shape[1], imgs.shape[2], imgs.shape[3]))
     maxExpo = expoTimes.max()
@@ -54,16 +56,6 @@ def ComputeCeLiu(target, source):
     return flow
 
 def WarpUsingFlow(imgs, flows):
-
-    # TODO: Dont think we need this param
-    #if (~exist('needBase', 'var') || isempty(needBase))
-    #    needBase = true;
-    #end
-
-    # We decided we didnt need this
-    #flows = gather(flows);
-    print(imgs.shape)
-
     hi = imgs.shape[0]
     wi = imgs.shape[1]
     c = imgs.shape[2]
@@ -85,20 +77,13 @@ def WarpUsingFlow(imgs, flows):
     curX = X + flows[:, :, 0]
     curY = Y + flows[:, :, 1]
 
-    curY_X = (curY, curX)
+    curY_X = np.array([curY, curX])
 
-    Y_X = (Y.flatten(),X.flatten())
+    Y_X = np.array([Y,X])
 
-    for i in range(0, c):        
-        warped[:,:,i] = griddata(Y_X, imgs[:,:,i].flatten(), curY_X, method="cubic")
+    for i in range(0, c): 
+        warped[:,:,i] = map_coordinates(imgs[:,:,i], curY_X, cval=np.nan)
 
     warped = np.clip(warped, 0, 1)
-
-    #%warped(isnan(warped)) = 0;
              
     return warped
-
-def isPixelNaN(img):
-    # Numpy isNan : retourne vecteur de meme dim, avec 0 ou 1 si non-NaN ou si NaN
-    #Donc utiliser ca au lieu de cette methode
-    return

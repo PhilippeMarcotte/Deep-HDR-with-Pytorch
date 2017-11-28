@@ -7,9 +7,9 @@ from DataAugmentation import ImageAugmentation
 from ImagePreprocessing import select_subset
 from ImagePreprocessing import get_num_patches
 
-def ComputeTrainingExamples(imgs, expoTimes, label):
+def ComputeTrainingExamples(imgs, expoTimes, label, is_training_set = True):
 
-    imgs, label = PrepareInputFeatures(imgs, expoTimes, label)
+    imgs, label = PrepareInputFeatures(imgs, expoTimes, label, is_training_set)
 
     imgs = CropBoundaries(imgs, Constants.crop)
     label = CropBoundaries(label, Constants.crop)
@@ -37,7 +37,7 @@ def ComputeTrainingExamples(imgs, expoTimes, label):
 
     return  imgs_patches, labels_patches
 
-def PrepareInputFeatures(imgs, expoTimes, label):
+def PrepareInputFeatures(imgs, expoTimes, label, is_training_set = True):
     imgs = ComputeOpticalFlow(imgs, expoTimes)
 
     nanIndicesImg1 = np.isnan(imgs[0])
@@ -46,20 +46,19 @@ def PrepareInputFeatures(imgs, expoTimes, label):
     nanIndicesImg3 = np.isnan(imgs[2])
     imgs[2][nanIndicesImg3] = LDR_to_LDR(imgs[1][nanIndicesImg3], expoTimes[1], expoTimes[2])
 
-    darkIndices = imgs[1] < 0.5
-    dark_and_nan3 = np.logical_and(darkIndices, nanIndicesImg3)
-    not_dark_and_nan1 = np.logical_and(np.logical_not(darkIndices), nanIndicesImg1)
-    badIndices = np.logical_or(dark_and_nan3, not_dark_and_nan1)
-    label[badIndices] = LDR_to_HDR(imgs[1][badIndices], expoTimes[1], Constants.gamma)
+    if is_training_set:
+        darkIndices = imgs[1] < 0.5
+        dark_and_nan3 = np.logical_and(darkIndices, nanIndicesImg3)
+        not_dark_and_nan1 = np.logical_and(np.logical_not(darkIndices), nanIndicesImg1)
+        badIndices = np.logical_or(dark_and_nan3, not_dark_and_nan1)
+        label[badIndices] = LDR_to_HDR(imgs[1][badIndices], expoTimes[1], Constants.gamma)
 
+    ldr_hdr_imgs = np.concatenate((imgs[0], imgs[1], imgs[2]), 2)
     #concatenate inputs
-    hdrImgs = LDR_to_HDR(imgs, expoTimes, Constants.gamma)
+    for (img, expoTime) in zip(imgs,expoTimes):
+        ldr_hdr_imgs = np.concatenate((ldr_hdr_imgs, LDR_to_HDR(img, expoTime, Constants.gamma)), 2)
 
-    imgs = np.concatenate((imgs[0], imgs[1], imgs[2]), 2)
-    hdrImgs = np.concatenate((hdrImgs[0], hdrImgs[1], hdrImgs[2]), 2)
-
-    imgs = np.concatenate((imgs, hdrImgs), 2)
-    return imgs, label
+    return ldr_hdr_imgs, label
 
 def GetNumPatches(width, height):
     return
