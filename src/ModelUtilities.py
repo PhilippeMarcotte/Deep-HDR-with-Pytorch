@@ -68,7 +68,7 @@ def l2_distance(result, target):
         return (target - result).pow(2).sum()
 
 def range_compressor(x):
-    return torch.log(x.mul(ModelsConstants.mu).add(1)) / log(1 + ModelsConstants.mu)
+    return torch.log(x.mul(Constants.mu).add(1)) / log(1 + Constants.mu)
 
 def psnr(x, target):
     sqrdErr = torch.mean((x - target) ** 2)
@@ -79,8 +79,9 @@ def psnr(x, target):
 def CropBoundaries(imgs, cropSize):
     return imgs[cropSize : -cropSize, cropSize : -cropSize, :]
 
-def crop_center(img,cropx,cropy):
-    y,x = img.size()
-    startx = x // 2 - (cropx // 2)
-    starty = y // 2 - (cropy // 2)
-    return img[starty:starty + cropy, startx:startx + cropx]
+def crop_center(img,crop):
+    y = img.size()[-2]
+    x = img.size()[-1]
+    startx = x // 2 - (crop // 2)
+    starty = y // 2 - (crop // 2)
+    return img[:, :, starty:starty + crop, startx:startx + crop]

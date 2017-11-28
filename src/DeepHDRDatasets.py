@@ -18,15 +18,16 @@ class DeepHDRScenes(Dataset):
         self.hdf5_scenes = [h5py.File(scene) for scene in scenes]
 
         self.label_transforms = transforms.Compose([
-                        crop_center(ModelsConstants.cnn_ouput_size),
-                        range_compressor(crop)                        ])
+                        transforms.Lambda(lambda tensor: crop_center(tensor, ModelsConstants.cnn_ouput_size)),
+                        transforms.Lambda(lambda crops: range_compressor(crops))])
         
     def __getitem__(self, index):
         scene = self.hdf5_scenes[index]
 
-        scene_labels = np.array(scene.get("labels"))
+        scene_labels = torch.from_numpy(np.array(scene.get("labels")))
+        scene_labels = self.label_transforms(scene_labels)
         
-        scene_imgs = np.array(scene.get("inputs"))
+        scene_imgs = torch.from_numpy(np.array(scene.get("inputs")))
 
         return (scene_imgs, scene_labels)
 
