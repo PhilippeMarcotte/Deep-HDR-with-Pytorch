@@ -78,3 +78,9 @@ def psnr(x, target):
 # A voir
 def CropBoundaries(imgs, cropSize):
     return imgs[cropSize : -cropSize, cropSize : -cropSize, :]
+
+def crop_center(img,cropx,cropy):
+    y,x = img.size()
+    startx = x // 2 - (cropx // 2)
+    starty = y // 2 - (cropy // 2)
+    return img[starty:starty + cropy, startx:startx + cropx]

@@ -7,6 +7,8 @@ import torchvision.transforms as transforms
 import ModelsConstants
 from ModelUtilities import list_all_files_sorted
 import h5py
+from ModelUtilities import range_compressor
+from ModelUtilities import crop_center
 
 class DeepHDRScenes(Dataset):
     def __init__(self, root):
@@ -14,6 +16,10 @@ class DeepHDRScenes(Dataset):
 
         scenes = list_all_files_sorted(self.root)
         self.hdf5_scenes = [h5py.File(scene) for scene in scenes]
+
+        self.label_transforms = transforms.Compose([
+                        crop_center(ModelsConstants.cnn_ouput_size),
+                        range_compressor(crop)                        ])
         
     def __getitem__(self, index):
         scene = self.hdf5_scenes[index]
@@ -35,17 +41,11 @@ class DeepHDRPatches(Dataset):
     def __init__(self, scene_imgs, scene_labels):
         self.scene_imgs = scene_imgs
         self.scene_labels = scene_labels
-        self.label_transforms = transforms.Compose([
-                        transforms.ToPILImage(),
-                        transforms.CenterCrop(ModelsConstants.cnn_ouput_size),
-                        transforms.ToTensor()
-                        ])
     
     def __getitem__(self, index):
         imgs = self.scene_imgs[index]
 
         label = self.scene_labels[index]
-        label = self.label_transforms(label)
         return (imgs, label)
 
     def __len__(self):
