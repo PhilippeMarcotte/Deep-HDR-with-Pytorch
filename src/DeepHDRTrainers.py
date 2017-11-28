@@ -29,6 +29,9 @@ class DeepHDRTrainer(ABC):
         self.best_psnr = 0
 
         os.makedirs(self.checkpoints_folder, exist_ok=True)
+        self.psnr_track_file = os.path.join(self.checkpoints_folder, "psnrs.txt")
+        with open(self.psnr_track_file, "w+") as f:
+            f.write("")
         
         if checkpoint_name:
             checkpoint_name = self.checkpoints_folder + checkpoint_name
@@ -111,6 +114,8 @@ class DeepHDRTrainer(ABC):
 
             print("validation psnr : {}".format(average_psnr))
 
+            self.track_psnr(average_psnr)
+
             if self.best_psnr < average_psnr:
                 self.best_psnr = average_psnr
                 return True
@@ -122,9 +127,9 @@ class DeepHDRTrainer(ABC):
     def __build_model__(self):
         pass
 
-    def __make_checkpoint__(self, iteration, is_best, filename='checkpoint.pth'):
-        #checkpoint_datetime = str(datetime.now())
-        #filename = filename.format(checkpoint_datetime)
+    def __make_checkpoint__(self, iteration, is_best, filename='checkpoint_{}.pth'):
+        checkpoint_datetime = str(datetime.now())
+        filename = filename.format(checkpoint_datetime)
         
         state = {
             'iteration': iteration,
@@ -136,6 +141,10 @@ class DeepHDRTrainer(ABC):
         torch.save(state, self.checkpoints_folder + filename)
         if is_best:
             shutil.copyfile(self.checkpoints_folder + filename, self.checkpoints_folder + 'model_best.pth')
+    
+    def track_psnr(self, psnr):
+        with open(self.psnr_track_file, "a") as myfile:
+            myfile.write("{:.14f}\n".format(psnr))
 
 class DirectDeepHDRTrainer(DeepHDRTrainer):
     def __init__(self, checkpoint=None, checkpoints_folder = "./checkpoints/"):
