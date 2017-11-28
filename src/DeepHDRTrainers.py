@@ -17,7 +17,7 @@ class DeepHDRTrainer(ABC):
         self.cnn = self.__build_model__()
         self.cuda_device_index = torch.cuda.device_count() - 1
         if torch.cuda.is_available():
-            if torch.cuda.count_device() > 1:
+            if torch.cuda.device_count() > 1:
                 self.cnn = torch.nn.DataParallel(self.cnn)
                 self.cnn = self.cnn.cuda()
 
