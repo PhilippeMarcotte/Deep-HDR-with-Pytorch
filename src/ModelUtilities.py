@@ -2,6 +2,7 @@ from skimage.util.shape import view_as_windows
 import torch
 import numpy as np
 import Constants
+from math import log10
 from math import log
 import os, glob
 
@@ -68,11 +69,11 @@ def l2_distance(result, target):
         return (target - result).pow(2).sum()
 
 def range_compressor(x):
-    return torch.log(x.mul(Constants.mu).add(1)) / log(1 + Constants.mu)
+    return (torch.log(x.mul(Constants.mu).add(1)) / log(10)) / log10(1 + Constants.mu)
 
 def psnr(x, target):
     sqrdErr = torch.mean((x - target) ** 2)
-    return 10 * log(1/sqrdErr)
+    return 10 * log10(1/sqrdErr)
     
 # Je pense que ces fonctions crop pas la bonne taille. Je crois qu<il faut enlever le -1
 # A voir

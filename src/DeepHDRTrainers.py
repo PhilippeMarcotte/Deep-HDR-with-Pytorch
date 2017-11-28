@@ -72,12 +72,13 @@ class DeepHDRTrainer(ABC):
 
                             self.optimizer.step()
 
+                            if iteration % TrainingConstants.validation_frequency == 0:
+                                is_best = self.validating()
+                                self.__make_checkpoint__(iteration, is_best)
+                            
                             iteration += 1
                             pbar.update()
 
-                            if iteration % TrainingConstants.validation_frequency == 0:
-                                is_best = self.validating()
-                                self.__make_checkpoint__(iteration, is_best)               
     
     def validating(self):
         with closing(DeepHDRScenes(root=os.path.join(Constants.training_data_root, Constants.test_directory))) as scenes:
@@ -95,8 +96,6 @@ class DeepHDRTrainer(ABC):
                     if torch.cuda.is_available():
                         patches = patches.cuda(self.cuda_device_index)
                         labels = labels.cuda(self.cuda_device_index)
-                            
-                    self.optimizer.zero_grad()
 
                     output = self.cnn(patches)
                     scene_outputs.append(output.data)
