@@ -50,30 +50,28 @@ class DeepHDRModel(nn.Module):
             if isinstance(module, nn.Conv2d):
                 init_weight(module.weight)
 
-    def other_forward_steps(self, x):
-        return range_compressor(hdr_img)
+    def other_forward_steps(self, x, other=None):
+        return range_compressor(x)
 
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        imgs = self.other_forward_steps(out)
+        imgs = self.other_forward_steps(out, x[:,9:18])
         return imgs
 
 class DirectDeepHDR(DeepHDRModel):
     def __init__(self):
         super(DirectDeepHDR, self).__init__(3)
-    
-    def other_forward_steps(self, x):
-        return x
 
 class WeDeepHDR(DeepHDRModel):
-    def __init__(self, images):
+    def __init__(self):
         super(WeDeepHDR, self).__init__(9)
     
-    def other_forward_steps(self, weights):
-        return weighted_average(weights, self.images[:, 9:18], ModelsConstants.num_channels)
+    def other_forward_steps(self, weights, hdr_imgs):
+        hdr_imgs = weighted_average(weights, hdr_imgs, ModelsConstants.num_channels)
+        return super(WeDeepHDR, self).other_forward_steps(hdr_imgs)
 
 class WieDeepHDRRefiner(DeepHDRModel):
     def __init__(self):
