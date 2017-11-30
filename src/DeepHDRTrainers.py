@@ -197,7 +197,7 @@ if __name__ == "__main__":
     model_group.add_argument('--WE', dest='model', action='store_const', const='WE')
     model_group.add_argument('--WIE', dest='model', action='store_const', const='WIE')
 
-    args = parser.parse_args(["--Direct"])
+    args = parser.parse_args()
     
     if args.best_checkpoint:
         checkpoint = 'model_best.pth'
