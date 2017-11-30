@@ -50,4 +50,4 @@ class DeepHDRPatches(Dataset):
         return (imgs, label)
 
     def __len__(self):
-        return self.scene_imgs.shape[0]
+        return self.scene_imgs.size()[0]

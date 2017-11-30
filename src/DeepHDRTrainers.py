@@ -77,40 +77,45 @@ class DeepHDRTrainer(ABC):
 
                             self.optimizer.step()
 
+                            
+                            pbar.update()
+
+                            patches = None
+                            labels = None
+
                             if iteration % TrainingConstants.validation_frequency == 0:
                                 is_best = self.validating()
                                 self.__make_checkpoint__(iteration, is_best)
                             
                             iteration += 1
-                            pbar.update()
 
-    
+                        scene_imgs = None
+                        scene_labels = None
+                            
     def validating(self):
         with closing(DeepHDRScenes(root=os.path.join(Constants.training_data_root, Constants.test_directory))) as scenes:
             scene_loader = torch.utils.data.DataLoader(scenes)
             sum_psnr = 0
-            for i, (scene_imgs, scene_labels) in tqdm(enumerate(scene_loader)):
+            psnrs = []
+            it = iter(scene_loader)
+            for (scene_imgs, scene_labels) in tqdm(scene_loader):
                 patches = DeepHDRPatches(scene_imgs.squeeze(), scene_labels.squeeze())
                 patches_loader = torch.utils.data.DataLoader(patches, batch_size=20)
-                scene_outputs = []
-                scene_cropped_labels = []
-                for j, (imgs, labels) in enumerate(patches_loader):
-                    patches = Variable(imgs)
-                    labels = Variable(labels)
+                for (imgs, labels) in patches_loader:
+                    imgs = Variable(imgs, volatile=True)
+                    labels = Variable(labels, volatile=True)
 
                     if torch.cuda.is_available():
-                        patches = patches.cuda()
+                        imgs = imgs.cuda()
                         labels = labels.cuda()
+                    
+                    self.optimizer.zero_grad()
 
-                    output = self.cnn(patches)
-                    scene_outputs.append(output.data)
-                    scene_cropped_labels.append(labels.data)
+                    output = self.cnn(imgs)
 
-                outputs = torch.cat(scene_outputs, 0)
-                labels = torch.cat(scene_cropped_labels, 0)
-                sum_psnr += psnr(outputs, labels)
+                    psnrs.append(psnr(output.data, labels.data))
 
-            average_psnr = sum_psnr / scene_loader.__len__()
+            average_psnr = sum(psnrs)/len(psnrs)
 
             print("validation psnr : {}".format(average_psnr))
 
@@ -169,6 +174,6 @@ class WieDeepHDRTrainer(DeepHDRTrainer):
         
 
 if __name__ == "__main__":
-    trainer = DirectDeepHDRTrainer()
+    trainer = WeDeepHDRTrainer()
 
     trainer.train()
