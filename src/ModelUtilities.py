@@ -2,6 +2,7 @@ from skimage.util.shape import view_as_windows
 import torch
 import numpy as np
 import Constants
+import ModelsConstants
 from math import log10
 from math import log
 import os, glob
@@ -29,24 +30,24 @@ def extract_patches_from_image(img, patch_size, stride):
             count += 1
     return patches
 
-def weighted_average(weights, imgs, num_channels):
-    assert weights.size() == imgs.size()
+def weighted_average(weights, imgs, num_channels=3):
     assert weights.size()[1] % num_channels == 0
+
+    w1 = weights[:, 0:3]
+    w2 = weights[:, 3:6]
+    w3 = weights[:, 6:9]
+
+    imgs = crop_center(imgs, ModelsConstants.cnn_ouput_size)
+
+    im1 = imgs[:, 0:3]
+    im2 = imgs[:, 3:6]
+    im3 = imgs[:, 6:9]
+
+    weights_sum = (w1 + w2 + w3).add(float(np.finfo(np.float32).eps))
     
-    mat_size = weights.size()
-    num_imgs = mat_size[1] / num_channels
+    output = (im1 * w1 + im2 * w2 + im3 * w3) / weights_sum
 
-    average_denominator = torch.zeros(mat_size[0], 3, mat_size[2], mat_size[3])
-    average_numerator = torch.zeros(mat_size[0], 3, mat_size[2], mat_size[3])
-    for index in range(num_imgs):
-        weight_mat = weights[:, index * num_channels:(index + 1) * num_channels]
-        img = imgs[:, index * num_channels:(index + 1) * num_channels]
-
-        average_denominator += weight_mat
-
-        average_numerator += weight_mat.matmul(img)
-    
-    return average_numerator / average_denominator
+    return output
 
 def LDR_to_HDR(imgs, expo, gamma):
     return (imgs ** gamma) / expo
@@ -65,11 +66,11 @@ def HDR_to_LDR(img, expo):
     return img
 
 def l2_distance(result, target):
-        assert result.size() == target.size()
-        return (target - result).pow(2).sum()
+    assert result.size() == target.size()
+    return (target - result).pow(2).sum()
 
 def range_compressor(x):
-    return (torch.log(x.mul(Constants.mu).add(1)) / log(10)) / log10(1 + Constants.mu)
+    return (torch.log(x.mul(Constants.mu).add(1))) / log(1 + Constants.mu)
 
 def psnr(x, target):
     sqrdErr = torch.mean((x - target) ** 2)
@@ -86,3 +87,11 @@ def crop_center(img,crop):
     startx = x // 2 - (crop // 2)
     starty = y // 2 - (crop // 2)
     return img[:, :, starty:starty + crop, startx:startx + crop]
+
+if __name__ == "__main__":
+    mat1 = torch.ones((1,3,40,40))
+    mat2 = 2*torch.ones((1,3,40,40))
+    mat3 = 3*torch.ones((1,3,40,40))
+    weights = torch.ones((1,9,28,28))
+    mat = torch.cat((mat1,mat2,mat3), 1)
+    weighted_average(weights, mat)
