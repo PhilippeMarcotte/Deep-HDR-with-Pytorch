@@ -11,9 +11,11 @@ import shutil
 import Constants
 from tqdm import tqdm
 from contextlib import closing
+import argparse
+import glob
 
 class DeepHDRTrainer(ABC):
-    def __init__(self, model_name=None, checkpoint_name=None, checkpoints_folder = "./checkpoints/"):
+    def __init__(self, model_name=None, checkpoint=None, checkpoints_folder = "./checkpoints/"):
         self.cnn = self.__build_model__()
         self.cuda_device_index = torch.cuda.device_count() - 1
         if torch.cuda.is_available():
@@ -29,24 +31,27 @@ class DeepHDRTrainer(ABC):
         self.best_psnr = 0
 
         os.makedirs(self.checkpoints_folder, exist_ok=True)
-        self.psnr_track_file = os.path.join(self.checkpoints_folder, "psnrs.txt")
-        with open(self.psnr_track_file, "w+") as f:
-            f.write("")
+        self.psnr_track_file = os.path.join(self.checkpoints_folder, "psnrs.txt")        
         
-        if checkpoint_name:
-            checkpoint_name = self.checkpoints_folder + checkpoint_name
-            if os.path.isfile(checkpoint_name):
-                print("loading checkpoint '{}'".format(checkpoint_name))
-                checkpoint = torch.load(checkpoint_name)
-                self.starting_iteration = checkpoint['epoch']
+        from_checkpoint = False
+        if checkpoint:
+            if os.path.isfile(checkpoint):
+                from_checkpoint = True
+                print("loading checkpoint '{}'".format(checkpoint))
+                checkpoint = torch.load(checkpoint)
+                self.starting_iteration = checkpoint['iteration']
                 self.best_psnr = checkpoint['best_psnr']
                 self.cnn.load_state_dict(checkpoint['state_dict'])
                 self.optimizer.load_state_dict(checkpoint['optimizer'])
-                print("=> loaded checkpoint '{}' (epoch {})"
-                    .format(checkpoint_name, checkpoint['epoch']))
+                print("=> loaded checkpoint '{}' (iteration {})"
+                    .format(checkpoint, checkpoint['iteration']))
             else:
-                print("no checkpoint found at '{}'".format(checkpoint_name))
+                print("no checkpoint found at '{}'".format(checkpoint))
                 print("starting with no checkpoint")
+        
+        if not from_checkpoint:
+            with open(self.psnr_track_file, "w+") as f:
+                f.write("")
 
     def train(self):
         assert self.cnn
@@ -174,6 +179,44 @@ class WieDeepHDRTrainer(DeepHDRTrainer):
         
 
 if __name__ == "__main__":
-    trainer = WeDeepHDRTrainer()
+    parser = argparse.ArgumentParser(
+        description='Training a deep learning model to generate HDR images.',
+    )
+    
+    parser.add_argument('-v', '--validate', action='store_true', dest='is_validating', default=False)
 
-    trainer.train()
+    checkpoint_group = parser.add_mutually_exclusive_group()
+    checkpoint_group.add_argument('-b', '--best', dest="best_checkpoint", action='store_true', default=False)
+    checkpoint_group.add_argument('-l', '--lastcheckpoint', dest="last_checkpoint", action='store_true', default=False)
+    checkpoint_group.add_argument('-c', '--checkpoint', dest="checkpoint", type=str, default=None)
+
+    parser.add_argument('-f', '--checkpointsfolder', dest="checkpoints_folder", type=str, default='./checkpoints/')
+
+    model_group = parser.add_mutually_exclusive_group(required=True)
+    model_group.add_argument('--Direct', dest='model', action='store_const', const='Direct')
+    model_group.add_argument('--WE', dest='model', action='store_const', const='WE')
+    model_group.add_argument('--WIE', dest='model', action='store_const', const='WIE')
+
+    args = parser.parse_args(["--Direct"])
+    
+    if args.best_checkpoint:
+        checkpoint = 'model_best.pth'
+    elif args.last_checkpoint:
+        list_of_files = glob.glob(os.path.join(args.checkpoints_folder, args.model, 'checkpoint_*.pth'))
+        checkpoint = max(list_of_files, key=os.path.getctime)
+    elif args.checkpoint:
+        checkpoint = args['checkpoint']
+    else:
+        checkpoint = None
+
+    if args.model == 'Direct':
+        trainer = DirectDeepHDRTrainer(checkpoint, args.checkpoints_folder)
+    elif args.model == 'WE':
+        trainer = WeDeepHDRTrainer(checkpoint, args.checkpoints_folder)
+    elif args.model == 'WIE':
+        trainer = WieDeepHDRTrainer(checkpoint, args.checkpoint_folder)
+       
+    if args.is_validating:
+        trainer.validating()
+    else:
+        trainer.train()
