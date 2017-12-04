@@ -8,9 +8,9 @@ import torchvision.datasets as datasets
 from PIL import Image
 from DeepHDRDatasets import *
 
-class DeepHDRModel(nn.Module):
+class ModelDeepHDR(nn.Module):
     def __init__(self, out_channels = 3, use_xavier_init_uniformally = True):
-        super(DeepHDRModel, self).__init__()
+        super(ModelDeepHDR, self).__init__()
         self.layers = []
 
         self.layer1 = nn.Sequential(
@@ -50,57 +50,62 @@ class DeepHDRModel(nn.Module):
             if isinstance(module, nn.Conv2d):
                 init_weight(module.weight)
 
-    def other_forward_steps(self, x, other=None):
-        return range_compressor(x)
+    def post_convolution_steps(self, out, **inputs):
+        return range_compressor(out)
 
-    def forward(self, x):
-        out = self.layer1(x)
+    def forward(self, **inputs):
+        out = self.layer1(inputs['patches'])
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        imgs = self.other_forward_steps(out, x[:,9:18])
+        imgs = self.post_convolution_steps(out, **inputs)
         return imgs
 
-class DirectDeepHDR(DeepHDRModel):
+class DirectDeepHDR(ModelDeepHDR):
     def __init__(self):
         super(DirectDeepHDR, self).__init__(3)
 
-class WeDeepHDR(DeepHDRModel):
+class WeDeepHDR(ModelDeepHDR):
     def __init__(self):
         super(WeDeepHDR, self).__init__(9)
     
-    def other_forward_steps(self, weights, hdr_imgs):
-        hdr_imgs = weighted_average(weights, hdr_imgs, ModelsConstants.num_channels)
-        return super(WeDeepHDR, self).other_forward_steps(hdr_imgs)
+    def post_convolution_steps(self, weights, **inputs):
+        hdr_img = weighted_average(weights, inputs.patches[:, 9:18], ModelsConstants.num_channels)
+        return super(WeDeepHDR, self).post_convolution_steps(hdr_imgs)
 
-class WieDeepHDRRefiner(DeepHDRModel):
+class WieDeepHDR(ModelDeepHDR):
     def __init__(self):
-        super(WieDeepHDRRefiner, self).__init__(9)
+        super(WieDeepHDR, self).__init__(18)
+        self.set_phase_1()
 
-class WieDeepHDR(DeepHDRModel):
-    def __init__(self, expo, gamma):
-        super(WieDeepHDR, self).__init__()
+    def phase_1_steps(self, out, **inputs):
+        return out[:, 0:9]
+
+    def set_phase_1(self):
+        self.steps = self.phase_1_steps
+        self.phase = 1
+
+    def phase_2_steps(self, out, **inputs):
+        hdr_imgs = []
+
+        for i in range(3):
+            hdr_imgs.append(LDR_to_HDR(out[:, i * 3: (i+1) * 3], inputs['expos'][i], Constants.gamma))
+        
+        hdr_imgs = torch.cat(hdr_imgs, 1)
+        return weighted_average(out[:, 9:18], hdr_imgs, ModelsConstants.num_channels)
     
-    def phase1_foward(self, x):
-        return x
-
-    def setPhase1():
-        self.phase_forward = self.phase1_foward
+    def set_phase_2(self):
+        self.steps = self.phase_2_steps
+        self.phase = 2
     
-    def phase2_foward(self, x):
-        return weighted_average(weights, self.images[:, 9:18], ModelsConstants.num_channels)
-
-    def setPhase2():
-        self.phase_forward = self.phase2_foward
-
-    def other_forward_steps(self, x, ):
-        return self.phase_forward(x)
-
-    def refined_LDR_images(self, x):
-        x = x.clamp(0,1)
-        low_expo_HDR = LDR_to_HDR(x[:, 0:3])
-        med_expo_HDR = LDR_to_HDR(x[:, 3:6])
-        hig_expo_HDR = LDR_to_HDR(x[:, 6:9])
-
-        HDR_imgages = [low_expo_HDR, med_expo_HDR, hig_expo_HDR]
-        return torch.cat(HDR_imgages, 1)
+    def post_convolution_steps(self, out, **inputs):
+        return self.steps(out, **inputs)
+    
+    def eval(self):
+        self.steps = self.phase_2_steps
+    
+    def train(self):
+        self.steps = self.phase_1_steps
+    
+    def get_phase(self):
+        return self.phase
