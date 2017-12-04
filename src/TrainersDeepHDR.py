@@ -60,7 +60,7 @@ class DeepHDRTrainer(ABC):
         loss.backward()
         self.optimizer.step()
     
-    def __evaluate_training__(self, iteration):        
+    def __evaluate_training__(self):
         psnr = self.evaluate()
         self.__track_psnr__(psnr)
 
@@ -88,7 +88,7 @@ class DeepHDRTrainer(ABC):
                             self.__train__(imgs,labels)
                             
                             if iteration % TrainingConstants.validation_frequency == 0:
-                                is_best = self.__evaluate_training__(iteration)
+                                is_best = self.__evaluate_training__()
                                 self.__make_checkpoint__(iteration, is_best)
                                 
                             iteration += 1
@@ -107,9 +107,7 @@ class DeepHDRTrainer(ABC):
     def evaluate(self):
         with closing(ScenesDeepHDR(root=os.path.join(Constants.scenes_root, Constants.test_directory))) as scenes:
             scene_loader = torch.utils.data.DataLoader(scenes)
-            sum_psnr = 0
             psnrs = []
-            it = iter(scene_loader)
             for (scene_imgs, scene_labels, _) in tqdm(scene_loader):
                 patches = PatchesDeepHDR(scene_imgs.squeeze(), scene_labels.squeeze())
                 patches_loader = torch.utils.data.DataLoader(patches, batch_size=20)
@@ -122,7 +120,7 @@ class DeepHDRTrainer(ABC):
 
             print("validation psnr : {}".format(average_psnr))
 
-        return average_psnr            
+        return average_psnr
             
     @abstractmethod
     def __build_model__(self):
