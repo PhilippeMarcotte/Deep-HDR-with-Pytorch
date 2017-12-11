@@ -1,6 +1,6 @@
 from PrepareTrainingData import distribute_training_data_preparation
-from TrainersDeepHDR import DirectDeepHDRTrainer
+from TrainersDeepHDR import DirectTrainerDeepHDR
 
 distribute_training_data_preparation()
-trainer = DirectDeepHDRTrainer()
+trainer = DirectTrainerDeepHDR()
 trainer.train()

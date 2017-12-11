@@ -37,8 +37,6 @@ def weighted_average(weights, imgs, num_channels=3):
     w2 = weights[:, 3:6]
     w3 = weights[:, 6:9]
 
-    imgs = crop_center(imgs, ModelsConstants.cnn_ouput_size)
-
     im1 = imgs[:, 0:3]
     im2 = imgs[:, 3:6]
     im3 = imgs[:, 6:9]
@@ -84,9 +82,7 @@ def CropBoundaries(imgs, cropSize):
 def crop_center(img,crop):
     y = img.size()[-2]
     x = img.size()[-1]
-    startx = x // 2 - (crop // 2)
-    starty = y // 2 - (crop // 2)
-    return img[:, :, starty:starty + crop, startx:startx + crop]
+    return img[:, :, crop:y - crop, crop:x - crop]
 
 if __name__ == "__main__":
     mat1 = torch.ones((1,3,40,40))
