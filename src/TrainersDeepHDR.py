@@ -1,5 +1,4 @@
 import torch
-import TrainingConstants
 from abc import ABC, abstractmethod
 import os
 from datetime import datetime
@@ -23,7 +22,7 @@ class TrainerDeepHDR(ABC):
         self.checkpoints_folder = os.path.join(checkpoints_folder, model_name, "")
 
         self.starting_iteration = 0
-        self.optimizer = torch.optim.Adam(self.cnn.parameters(), TrainingConstants.learning_rate)
+        self.optimizer = torch.optim.Adam(self.cnn.parameters(), Constants.learning_rate)
 
         self.best_psnr = 0
 
@@ -76,10 +75,10 @@ class TrainerDeepHDR(ABC):
         assert self.cnn
 
         with closing(ScenesDeepHDR(root=os.path.join(Constants.training_data_root, Constants.training_directory))) as scenes:
-            with tqdm(total=TrainingConstants.num_iterations) as pbar:
+            with tqdm(total=Constants.num_iterations) as pbar:
                 pbar.update(self.starting_iteration)
                 iteration = self.starting_iteration
-                while iteration < TrainingConstants.num_iterations:
+                while iteration < Constants.num_iterations:
                     scene_loader = torch.utils.data.DataLoader(scenes, shuffle=True)
                     for (scene_imgs, scene_labels, index) in scene_loader:
                         patches = PatchesDeepHDR(scene_imgs.squeeze(), scene_labels.squeeze())
@@ -87,7 +86,7 @@ class TrainerDeepHDR(ABC):
                         for (imgs, labels) in patches_loader:                            
                             self.__train__(imgs,labels)
                             
-                            if iteration % TrainingConstants.validation_frequency == 0:
+                            if iteration % Constants.validation_frequency == 0:
                                 is_best = self.__evaluate_training__()
                                 self.__make_checkpoint__(iteration, is_best)
                                 
@@ -222,10 +221,10 @@ class WieTrainerDeepHDR(TrainerDeepHDR):
 
     def train_phase(self, dataset):
         with closing(dataset(os.path.join(Constants.training_data_root, Constants.training_directory))) as scenes:
-            with tqdm(total=TrainingConstants.num_iterations) as pbar:
+            with tqdm(total=Constants.num_iterations) as pbar:
                 pbar.update(self.starting_iteration)
                 iteration = self.starting_iteration
-                while iteration < TrainingConstants.num_iterations:
+                while iteration < Constants.num_iterations:
                     scene_loader = torch.utils.data.DataLoader(scenes, shuffle=True)
                     for (scene_imgs, scene_labels, index) in scene_loader:
                         patches = PatchesDeepHDR(scene_imgs.squeeze(), scene_labels.squeeze())
@@ -234,7 +233,7 @@ class WieTrainerDeepHDR(TrainerDeepHDR):
                         for (imgs, labels) in patches_loader:
                             self.__train__(imgs, labels, expos=expos)
 
-                            if iteration % TrainingConstants.validation_frequency == 0:
+                            if iteration % Constants.validation_frequency == 0:
                                 is_best = self.__evaluate_training__()
                                 self.__make_checkpoint__(iteration, is_best, additionnal_name=dataset.__name__, phase=self.cnn.get_phase())
 

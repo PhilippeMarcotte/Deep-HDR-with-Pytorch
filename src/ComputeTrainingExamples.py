@@ -1,4 +1,4 @@
-from ModelUtilities import CropBoundaries, extract_patches_from_image, LDR_to_HDR, LDR_to_LDR
+from ModelUtilities import crop_boundaries, extract_patches_from_image, LDR_to_HDR, LDR_to_LDR
 import Constants
 import numpy as np
 import numbers
@@ -11,8 +11,8 @@ def ComputeTrainingExamples(imgs, expoTimes, label, is_training_set = True):
 
     imgs, label = PrepareInputFeatures(imgs, expoTimes, label, is_training_set)
 
-    imgs = CropBoundaries(imgs, Constants.crop)
-    label = CropBoundaries(label, Constants.crop)
+    imgs = crop_boundaries(imgs, Constants.crop)
+    label = crop_boundaries(label, Constants.crop)
 
     imgAugmentation = ImageAugmentation()
 
@@ -59,14 +59,3 @@ def PrepareInputFeatures(imgs, expoTimes, label, is_training_set = True):
         ldr_hdr_imgs = np.concatenate((ldr_hdr_imgs, LDR_to_HDR(img, expoTime, Constants.gamma)), 2)
 
     return ldr_hdr_imgs, label
-
-def GetNumPatches(width, height):
-    return
-
-#Do with numpy instead?
-def GetPatches(imgs, patchSize, stride):
-    return
-
-# Necessaire?
-def SelectSubset(imgs):
-    return

@@ -3,7 +3,7 @@ from ModelUtilities import *
 import numpy as np
 from torch.autograd import Variable
 import torch
-import ModelsConstants
+import Constants
 import torchvision.datasets as datasets
 from PIL import Image
 from DatasetsDeepHDR import *
@@ -76,8 +76,8 @@ class WeDeepHDR(ModelDeepHDR):
         super(WeDeepHDR, self).__init__(9)
     
     def post_convolution_steps(self, weights, **inputs):
-        imgs = crop_center(inputs['patches'][:, 9:18], ModelsConstants.cnn_crop_size)
-        hdr_imgs = weighted_average(weights, imgs, ModelsConstants.num_channels)
+        imgs = crop_center(inputs['patches'][:, 9:18], Constants.cnn_crop_size)
+        hdr_imgs = weighted_average(weights, imgs, Constants.num_channels)
         return super(WeDeepHDR, self).post_convolution_steps(hdr_imgs)
 
 class WieDeepHDR(ModelDeepHDR):
@@ -99,7 +99,7 @@ class WieDeepHDR(ModelDeepHDR):
             hdr_imgs.append(LDR_to_HDR(out[:, i * 3: (i+1) * 3], inputs['expos'][i], Constants.gamma))
         
         hdr_imgs = torch.cat(hdr_imgs, 1)
-        return weighted_average(out[:, 9:18], hdr_imgs, ModelsConstants.num_channels)
+        return weighted_average(out[:, 9:18], hdr_imgs, Constants.num_channels)
     
     def set_phase_2(self):
         self.steps = self.phase_2_steps

@@ -4,7 +4,7 @@ import os
 import torch
 import math
 import torchvision.transforms as transforms
-import ModelsConstants
+import Constants
 from ModelUtilities import list_all_files_sorted
 import h5py
 from ModelUtilities import range_compressor
@@ -18,7 +18,7 @@ class ScenesDeepHDR(Dataset):
         self.hdf5_scenes = [h5py.File(scene, mode='r') for scene in scenes]
 
         self.label_transforms = transforms.Compose([
-                        transforms.Lambda(lambda tensor: crop_center(tensor, ModelsConstants.cnn_crop_size)),
+                        transforms.Lambda(lambda tensor: crop_center(tensor, Constants.cnn_crop_size)),
                         transforms.Lambda(lambda crops: range_compressor(crops))])
         
     def __getitem__(self, index):
@@ -60,7 +60,7 @@ class RefinerScenesDeepHDR(Dataset):
         self.hdf5_scenes = [h5py.File(scene, mode='r') for scene in scenes]
 
         self.label_transforms = transforms.Compose([
-                        transforms.Lambda(lambda tensor: crop_center(tensor, ModelsConstants.cnn_ouput_size))])
+                        transforms.Lambda(lambda tensor: crop_center(tensor, Constants.cnn_ouput_size))])
         
     def __getitem__(self, index):
         scene = self.hdf5_scenes[index]

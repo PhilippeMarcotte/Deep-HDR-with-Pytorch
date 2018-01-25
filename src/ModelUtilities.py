@@ -2,7 +2,6 @@ from skimage.util.shape import view_as_windows
 import torch
 import numpy as np
 import Constants
-import ModelsConstants
 from math import log10
 from math import log
 import os, glob
@@ -14,11 +13,6 @@ def list_all_files_sorted(folderName, extension = ""):
 	return sorted(glob.glob(os.path.join(folderName, "*" + extension)))
 
 def extract_patches_from_image(img, patch_size, stride):
-    '''
-    patches = view_as_windows(img, (patch_size, patch_size, img.shape[-1]), stride)
-    patches = patches.reshape((-1, patch_size, patch_size, img.shape[-1]))
-    patches = np.rollaxis(patches, axis=0, start=4)
-    '''
     [height, width, depth] = img.shape
     num_patches = (np.floor((width - patch_size) / stride) + 1) * (np.floor((height - patch_size) / stride) + 1)
     patches = np.zeros((patch_size, patch_size, depth, num_patches.astype('int')))
@@ -51,13 +45,11 @@ def LDR_to_HDR(imgs, expo, gamma):
     return (imgs ** gamma) / expo
 
 def LDR_to_LDR(img, expo, expo2):
-    # TODO :
     Radiance = LDR_to_HDR(img, expo, Constants.gamma)
     return HDR_to_LDR(Radiance, expo2)
 
 def HDR_to_LDR(img, expo):
-    #TODO : Not sure if this line is needed
-    #img = img.astype('float32')
+    img = img.astype('float32')
     img *= expo
     img = np.clip(img, 0, 1)
     img = img ** (1/Constants.gamma)
@@ -73,21 +65,11 @@ def range_compressor(x):
 def psnr(x, target):
     sqrdErr = torch.mean((x - target) ** 2)
     return 10 * log10(1/sqrdErr)
-    
-# Je pense que ces fonctions crop pas la bonne taille. Je crois qu<il faut enlever le -1
-# A voir
-def CropBoundaries(imgs, cropSize):
+
+def crop_boundaries(imgs, cropSize):
     return imgs[cropSize : -cropSize, cropSize : -cropSize, :]
 
 def crop_center(img,crop):
     y = img.size()[-2]
     x = img.size()[-1]
     return img[:, :, crop:y - crop, crop:x - crop]
-
-if __name__ == "__main__":
-    mat1 = torch.ones((1,3,40,40))
-    mat2 = 2*torch.ones((1,3,40,40))
-    mat3 = 3*torch.ones((1,3,40,40))
-    weights = torch.ones((1,9,28,28))
-    mat = torch.cat((mat1,mat2,mat3), 1)
-    weighted_average(weights, mat)
