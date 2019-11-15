@@ -9,3 +9,12 @@ Scene folder need to follow this structure:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|---training
 
 The path to the root scene folder can be changed in the file Constants.py
+
+<figure>
+    <img src='/deep_hdr_example.png' />
+    <font size="2">
+    <figcaption>
+      Comparison between the green and red sections for all three architectures from the original paper and our own implementations and the reference
+    </figcaption>
+    </font>
+</figure>
